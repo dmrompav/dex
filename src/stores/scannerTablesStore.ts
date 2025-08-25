@@ -1,4 +1,8 @@
-import type { TokenData, SupportedChainName, GetScannerResultParams } from "../api/types";
+import type {
+  TokenData,
+  SupportedChainName,
+  GetScannerResultParams,
+} from "../api/types";
 import { fetchScanner } from "../api/scanner";
 import { mapScannerResultToTokenData } from "../api/mapScannerResultToTokenData";
 import { create } from "zustand";
@@ -51,7 +55,7 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         rankBy: "volume",
         isNotHP: filters.excludeHoneypots,
         minVol24H: filters.minVolume,
-  // minMcap: filters.minMcap, // нет такого поля в GetScannerResultParams
+        // minMcap: filters.minMcap, // нет такого поля в GetScannerResultParams
         maxAge: filters.maxAge,
         page: 1,
       };
@@ -65,7 +69,7 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         rankBy: "age",
         isNotHP: filters.excludeHoneypots,
         minVol24H: filters.minVolume,
-  // minMcap: filters.minMcap, // нет такого поля в GetScannerResultParams
+        // minMcap: filters.minMcap, // нет такого поля в GetScannerResultParams
         maxAge: filters.maxAge,
         page: 1,
       };
@@ -74,7 +78,10 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
       set({ newTokens });
       set({ loading: false });
     } catch (e: unknown) {
-      set({ error: (e instanceof Error ? e.message : "API error"), loading: false });
+      set({
+        error: e instanceof Error ? e.message : "API error",
+        loading: false,
+      });
     }
   },
 }));

@@ -41,18 +41,18 @@ const ScannerTables: React.FC = () => {
       <div className="flex gap-4">
         <div className="w-1/2">
           <h2 className="font-bold mb-2">Trending Tokens</h2>
-          <div className="border rounded bg-white min-h-[400px]">
+          <div className="border rounded bg-white dark:bg-gray-900 min-h-[400px]">
             {trendingTokens.length === 0 && !loading && !error && (
               <div className="p-4 text-gray-400">Нет данных</div>
             )}
             {trendingTokens.length > 0 && (
-              <table className="w-full text-sm">
+              <table className="w-full text-sm text-black dark:text-white">
                 <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 text-left">Token</th>
-                    <th className="p-2 text-right">Price</th>
-                    <th className="p-2 text-right">Volume</th>
-                    <th className="p-2 text-right">Mcap</th>
+                  <tr className="bg-gray-100 dark:bg-gray-800">
+                    <th className="p-2 text-left text-gray-700 dark:text-gray-200">Token</th>
+                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Price</th>
+                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Volume</th>
+                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Mcap</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -82,18 +82,18 @@ const ScannerTables: React.FC = () => {
         </div>
         <div className="w-1/2">
           <h2 className="font-bold mb-2">New Tokens</h2>
-          <div className="border rounded bg-white min-h-[400px]">
+          <div className="border rounded bg-white dark:bg-gray-900 min-h-[400px]">
             {newTokens.length === 0 && !loading && !error && (
               <div className="p-4 text-gray-400">Нет данных</div>
             )}
             {newTokens.length > 0 && (
-              <table className="w-full text-sm">
+              <table className="w-full text-sm text-black dark:text-white">
                 <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 text-left">Token</th>
-                    <th className="p-2 text-right">Price</th>
-                    <th className="p-2 text-right">Volume</th>
-                    <th className="p-2 text-right">Mcap</th>
+                  <tr className="bg-gray-100 dark:bg-gray-800">
+                    <th className="p-2 text-left text-gray-700 dark:text-gray-200">Token</th>
+                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Price</th>
+                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Volume</th>
+                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Mcap</th>
                   </tr>
                 </thead>
                 <tbody>

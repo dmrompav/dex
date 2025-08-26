@@ -34,14 +34,14 @@ export function ScannerTable<T extends { id: string }>({
   return (
     <div className="w-full">
       <h2 className="font-bold mb-2">{title}</h2>
-      <div className="border rounded bg-white dark:bg-gray-900 min-h-[400px]">
+      <div className="border rounded bg-gray-900 min-h-[400px]">
         {data.length === 0 && !loading && !error && (
           <div className="p-4 text-gray-400">{emptyText}</div>
         )}
         {data.length > 0 && (
-          <Table className="w-full text-sm text-black dark:text-white">
+          <Table className="w-full text-sm">
             <TableHeader>
-              <TableRow className="bg-gray-100 dark:bg-gray-800">
+              <TableRow className="bg-gray-800">
                 {columns.map((col) => (
                   <TableHead key={col.key} className={col.className}>
                     {col.header}

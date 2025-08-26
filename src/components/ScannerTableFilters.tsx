@@ -31,17 +31,17 @@ export const ScannerTableFilters = ({
   setExcludeHoneypots,
 }: ScannerTableFiltersProps) => {
   return (
-    <div className="flex flex-wrap gap-4 items-end p-4 bg-muted rounded-lg">
+    <div className="flex flex-wrap gap-4 items-end p-4 bg-gray-800 rounded-lg">
       <div className="flex flex-col gap-1">
         <Label htmlFor="chain">Chain</Label>
         <Select value={chain} onValueChange={setChain}>
           <SelectTrigger
             id="chain"
-            className="w-[120px] bg-white text-black border border-gray-300 dark:bg-gray-900 dark:text-white dark:border-gray-700"
+            className="w-[120px] border bg-gray-800 border-gray-800"
           >
             <SelectValue placeholder="Select chain" />
           </SelectTrigger>
-          <SelectContent className="bg-white text-black border border-gray-300 dark:bg-gray-900 dark:text-white dark:border-gray-700">
+          <SelectContent className="border bg-gray-900 border-gray-700">
             <SelectItem value="ETH">ETH</SelectItem>
             <SelectItem value="SOL">SOL</SelectItem>
             <SelectItem value="BASE">BASE</SelectItem>

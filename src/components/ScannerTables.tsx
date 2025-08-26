@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useScannerTablesStore } from "../stores/scannerTablesStore";
-import ScannerTableFilters from "./ScannerTableFilters";
+import { ScannerTableFilters } from "./ScannerTableFilters";
+import { ScannerTable } from "./ScannerTable";
+import type { TokenData } from "../api/types";
 
-const ScannerTables: React.FC = () => {
-  // Получаем данные и фильтры из стора
+const ScannerTables = () => {
   const {
     trendingTokens,
     newTokens,
@@ -14,7 +15,6 @@ const ScannerTables: React.FC = () => {
     loadTokens,
   } = useScannerTablesStore();
 
-  // Загружаем токены при маунте и изменении фильтров
   useEffect(() => {
     loadTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -25,7 +25,45 @@ const ScannerTables: React.FC = () => {
     filters.excludeHoneypots,
   ]);
 
-  // TODO: Реализация фильтров, таблиц, загрузки, ошибок, WebSocket и API
+  // Описание колонок для таблицы
+  const columns: {
+    key: string;
+    header: string;
+    render: (t: TokenData) => React.ReactNode;
+    className?: string;
+  }[] = [
+    {
+      key: "token",
+      header: "Token",
+      render: (t) => (
+        <>
+          {t.tokenName}{" "}
+          <span className="text-xs text-gray-500">({t.tokenSymbol})</span>
+        </>
+      ),
+      className: "p-2 text-left",
+    },
+    {
+      key: "priceUsd",
+      header: "Price",
+      render: (t) => (t.priceUsd ? t.priceUsd.toFixed(4) : "0.0000"),
+      className: "p-2 text-right",
+    },
+    {
+      key: "volumeUsd",
+      header: "Volume",
+      render: (t) =>
+        isNaN(Number(t.volumeUsd)) ? "-" : Number(t.volumeUsd).toLocaleString(),
+      className: "p-2 text-right",
+    },
+    {
+      key: "mcap",
+      header: "Mcap",
+      render: (t) =>
+        isNaN(Number(t.mcap)) ? "0" : Number(t.mcap).toLocaleString(),
+      className: "p-2 text-right",
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -35,96 +73,36 @@ const ScannerTables: React.FC = () => {
         minVolume={filters.minVolume}
         maxAge={filters.maxAge}
         excludeHoneypots={filters.excludeHoneypots}
-        onChange={setFilters}
+        setChain={(chain) =>
+          setFilters({ ...filters, chain: chain as typeof filters.chain })
+        }
+        setMinVolume={(minVolume) => setFilters({ ...filters, minVolume })}
+        setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
+        setExcludeHoneypots={(excludeHoneypots) =>
+          setFilters({ ...filters, excludeHoneypots })
+        }
       />
       {/* Таблицы */}
       <div className="flex gap-4">
         <div className="w-1/2">
-          <h2 className="font-bold mb-2">Trending Tokens</h2>
-          <div className="border rounded bg-white dark:bg-gray-900 min-h-[400px]">
-            {trendingTokens.length === 0 && !loading && !error && (
-              <div className="p-4 text-gray-400">Нет данных</div>
-            )}
-            {trendingTokens.length > 0 && (
-              <table className="w-full text-sm text-black dark:text-white">
-                <thead>
-                  <tr className="bg-gray-100 dark:bg-gray-800">
-                    <th className="p-2 text-left text-gray-700 dark:text-gray-200">Token</th>
-                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Price</th>
-                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Volume</th>
-                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Mcap</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trendingTokens.map((t) => (
-                    <tr key={t.id} className="border-b">
-                      <td className="p-2">
-                        {t.tokenName}{" "}
-                        <span className="text-xs text-gray-500">
-                          ({t.tokenSymbol})
-                        </span>
-                      </td>
-                      <td className="p-2 text-right">
-                        {t.priceUsd.toFixed(4)}
-                      </td>
-                      <td className="p-2 text-right">
-                        {t.volumeUsd.toLocaleString()}
-                      </td>
-                      <td className="p-2 text-right">
-                        {t.mcap.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <ScannerTable
+            columns={columns}
+            data={trendingTokens}
+            title="Trending Tokens"
+            loading={loading}
+            error={error}
+          />
         </div>
         <div className="w-1/2">
-          <h2 className="font-bold mb-2">New Tokens</h2>
-          <div className="border rounded bg-white dark:bg-gray-900 min-h-[400px]">
-            {newTokens.length === 0 && !loading && !error && (
-              <div className="p-4 text-gray-400">Нет данных</div>
-            )}
-            {newTokens.length > 0 && (
-              <table className="w-full text-sm text-black dark:text-white">
-                <thead>
-                  <tr className="bg-gray-100 dark:bg-gray-800">
-                    <th className="p-2 text-left text-gray-700 dark:text-gray-200">Token</th>
-                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Price</th>
-                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Volume</th>
-                    <th className="p-2 text-right text-gray-700 dark:text-gray-200">Mcap</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {newTokens.map((t) => (
-                    <tr key={t.id} className="border-b">
-                      <td className="p-2">
-                        {t.tokenName}{" "}
-                        <span className="text-xs text-gray-500">
-                          ({t.tokenSymbol})
-                        </span>
-                      </td>
-                      <td className="p-2 text-right">
-                        {t.priceUsd.toFixed(4)}
-                      </td>
-                      <td className="p-2 text-right">
-                        {t.volumeUsd.toLocaleString()}
-                      </td>
-                      <td className="p-2 text-right">
-                        {t.mcap.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <ScannerTable
+            columns={columns}
+            data={newTokens}
+            title="New Tokens"
+            loading={loading}
+            error={error}
+          />
         </div>
       </div>
-      {/* Loading/Error/Empty states */}
-      {loading && <div>Loading...</div>}
-      {error && <div className="text-red-500">{error}</div>}
     </div>
   );
 };

@@ -1,61 +1,79 @@
-import React from "react";
-import type { SupportedChainName } from "../api/types";
+import { Input } from "../components/shadcn/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "../components/shadcn/select";
+import { Label } from "../components/shadcn/label";
+import { Button } from "./shadcn/button";
 
 export interface ScannerTableFiltersProps {
-  chain: SupportedChainName;
+  chain: string;
   minVolume: number;
   maxAge: number;
   excludeHoneypots: boolean;
-  onChange: (filters: Partial<ScannerTableFiltersProps>) => void;
+  setChain: (chain: string) => void;
+  setMinVolume: (volume: number) => void;
+  setMaxAge: (age: number) => void;
+  setExcludeHoneypots: (exclude: boolean) => void;
 }
 
-const ScannerTableFilters: React.FC<ScannerTableFiltersProps> = ({
+export const ScannerTableFilters = ({
   chain,
   minVolume,
   maxAge,
   excludeHoneypots,
-  onChange,
-}) => {
+  setChain,
+  setMinVolume,
+  setMaxAge,
+  setExcludeHoneypots,
+}: ScannerTableFiltersProps) => {
   return (
-    <div className="flex gap-4 items-center mb-2">
-      <select
-        value={chain}
-        onChange={(e) =>
-          onChange({ chain: e.target.value as SupportedChainName })
-        }
-        className="border rounded px-2 py-1"
-      >
-        <option value="ETH">ETH</option>
-        <option value="SOL">SOL</option>
-        <option value="BASE">BASE</option>
-        <option value="BSC">BSC</option>
-      </select>
-      <input
-        type="number"
-        min={0}
-        value={minVolume}
-        onChange={(e) => onChange({ minVolume: Number(e.target.value) })}
-        placeholder="Min Volume"
-        className="border rounded px-2 py-1 w-32"
-      />
-      <input
-        type="number"
-        min={0}
-        value={maxAge}
-        onChange={(e) => onChange({ maxAge: Number(e.target.value) })}
-        placeholder="Max Age (sec)"
-        className="border rounded px-2 py-1 w-32"
-      />
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={excludeHoneypots}
-          onChange={(e) => onChange({ excludeHoneypots: e.target.checked })}
+    <div className="flex flex-wrap gap-4 items-end p-4 bg-muted rounded-lg">
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="chain">Chain</Label>
+        <Select value={chain} onValueChange={setChain}>
+          <SelectTrigger
+            id="chain"
+            className="w-[120px] bg-white text-black border border-gray-300 dark:bg-gray-900 dark:text-white dark:border-gray-700"
+          >
+            <SelectValue placeholder="Select chain" />
+          </SelectTrigger>
+          <SelectContent className="bg-white text-black border border-gray-300 dark:bg-gray-900 dark:text-white dark:border-gray-700">
+            <SelectItem value="ETH">ETH</SelectItem>
+            <SelectItem value="SOL">SOL</SelectItem>
+            <SelectItem value="BASE">BASE</SelectItem>
+            <SelectItem value="BSC">BSC</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="minVolume">Min Volume</Label>
+        <Input
+          id="minVolume"
+          type="number"
+          value={minVolume}
+          onChange={(e) => setMinVolume(Number(e.target.value))}
+          min={0}
         />
-        Exclude Honeypots
-      </label>
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="maxAge">Max Age (hrs)</Label>
+        <Input
+          id="maxAge"
+          type="number"
+          value={maxAge}
+          onChange={(e) => setMaxAge(Number(e.target.value))}
+          min={0}
+        />
+      </div>
+      <Button onClick={() => setExcludeHoneypots(!excludeHoneypots)}>
+        <span className="text-sm text-white">
+          {excludeHoneypots ? "Exclude honeypots" : "Include honeypots"}
+        </span>
+      </Button>
     </div>
   );
 };
-
-export default ScannerTableFilters;

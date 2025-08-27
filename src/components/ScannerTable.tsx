@@ -31,6 +31,8 @@ interface ScannerTableProps<T extends { id: string }> {
   hasMore?: boolean;
   onLoadMore?: () => void;
   loadingMore?: boolean;
+  // Called when the header sorting changes. Passes first sort entry or null.
+  onServerSort?: (sort: { id: string; desc: boolean } | null) => void;
 }
 
 export function ScannerTable<T extends { id: string }>({
@@ -43,13 +45,28 @@ export function ScannerTable<T extends { id: string }>({
   hasMore = false,
   onLoadMore,
   loadingMore = false,
+  onServerSort,
 }: ScannerTableProps<T>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const table = useReactTable({
     data,
     columns,
     state: { sorting },
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => {
+      // updater can be a value or a function (Updater<SortingState>)
+      const newSorting =
+        typeof updater === "function"
+          ? (updater as (old: SortingState) => SortingState)(sorting)
+          : (updater as SortingState);
+      setSorting(newSorting);
+      // notify parent for potential server-side sorting
+      if (onServerSort) {
+        const first = newSorting.length > 0 ? newSorting[0] : null;
+        onServerSort(
+          first ? { id: String(first.id), desc: !!first.desc } : null
+        );
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     debugTable: false,
@@ -66,11 +83,38 @@ export function ScannerTable<T extends { id: string }>({
   });
   const virtualRows = rowVirtualizer.getVirtualItems();
   const totalSize = rowVirtualizer.getTotalSize();
+  const sentinelRef = React.useRef<HTMLDivElement | null>(null);
+
+  // IntersectionObserver for infinite scroll
+  React.useEffect(() => {
+    if (!onLoadMore) return;
+    const root = parentRef.current;
+    const sentinel = sentinelRef.current;
+    if (!root || !sentinel) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (hasMore && !loadingMore) {
+              onLoadMore();
+            }
+          }
+        });
+      },
+      { root, rootMargin: "200px" }
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onLoadMore, hasMore, loadingMore, parentRef.current]);
 
   return (
     <div className="w-full">
       <h2 className="font-bold mb-2">{title}</h2>
-  <div ref={parentRef} className="relative border rounded bg-white dark:bg-gray-900 min-h-[400px] max-h-[600px] overflow-y-auto">
+      <div
+        ref={parentRef}
+        className="relative border rounded bg-white dark:bg-gray-900 min-h-[400px] max-h-[600px] overflow-y-auto"
+      >
         {data.length === 0 && !loading && !error && (
           <div className="p-4 text-gray-400">{emptyText}</div>
         )}
@@ -136,7 +180,10 @@ export function ScannerTable<T extends { id: string }>({
                           (cell.column.columnDef.meta as TableMeta)?.className
                         }
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -147,8 +194,10 @@ export function ScannerTable<T extends { id: string }>({
               {virtualRows.length > 0 && (
                 <TableRow
                   style={{
-                    height:
-                      Math.max(0, totalSize - (virtualRows[virtualRows.length - 1].end)),
+                    height: Math.max(
+                      0,
+                      totalSize - virtualRows[virtualRows.length - 1].end
+                    ),
                   }}
                 >
                   <TableCell colSpan={columns.length} />
@@ -158,23 +207,23 @@ export function ScannerTable<T extends { id: string }>({
           </Table>
         )}
         {loading && (
-          <div className="p-4 text-gray-400 w-full h-full absolute top-0 left-0 flex items-center justify-center">
+          <div className="p-4 text-gray-400 w-full h-full absolute top-0 left-0 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm">
             <Loader className="animate-spin" />
           </div>
         )}
-        {error && <div className="p-4 text-red-500">{error}</div>}
-        {/* Load more control */}
-        {hasMore && (
-          <div className="p-2 flex justify-center border-t bg-gray-50 dark:bg-gray-800">
-            <button
-              className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
-              onClick={onLoadMore}
-              disabled={loadingMore}
-            >
-              {loadingMore ? "Loading..." : "Load more"}
-            </button>
+        {error && (
+          <div className="p-4 text-red-500 bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded">
+            {error}
           </div>
         )}
+        {/* Infinite-scroll sentinel: when it becomes visible inside parentRef, call onLoadMore */}
+        <div
+          ref={(el) => {
+            // place sentinel inside scroll container; ref attached via effect observer
+            sentinelRef.current = el;
+          }}
+          className="h-1"
+        />
       </div>
     </div>
   );

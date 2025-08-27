@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useScannerTablesStore } from "../stores/scannerTablesStore";
 import { ScannerTableFilters } from "./ScannerTableFilters";
 import { ScannerTable } from "./ScannerTable";
-import type { TokenData } from "../api/types";
+import type { TokenData, SerdeRankBy, OrderBy } from "../api/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
 // Helper: return css class for pcs value
@@ -28,6 +28,8 @@ const ScannerTables = () => {
   newTotalRows,
   loadingMoreTrending,
   loadingMoreNew,
+  loadTrendingTokens,
+  loadNewTokens,
   } = useScannerTablesStore();
 
   // Load tokens on filter change
@@ -182,6 +184,28 @@ const ScannerTables = () => {
     },
   ];
 
+  // map column id/accessor to server-side rankBy value
+  const columnIdToRankBy = (id: string): string | null => {
+    switch (id) {
+      case "volumeUsd":
+      case "volume":
+        return "volume";
+      case "age":
+        return "age";
+      case "mcap":
+        return "mcap";
+      case "priceUsd":
+        return "price24H"; // best-effort mapping
+      case "buysSells":
+      case "buys":
+        return "buys";
+      case "liquidity":
+        return "liquidity";
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Фильтры */}
@@ -211,6 +235,12 @@ const ScannerTables = () => {
             hasMore={trendingTokens.length < trendingTotalRows}
             onLoadMore={() => loadMoreTrendingTokens()}
             loadingMore={loadingMoreTrending}
+            onServerSort={(sort) => {
+              if (!sort) return;
+              const rankBy = (columnIdToRankBy(sort.id) ?? "volume") as SerdeRankBy;
+              const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
+              loadTrendingTokens({ rankBy, orderBy });
+            }}
           />
         </div>
         <div className="w-1/2">
@@ -223,6 +253,12 @@ const ScannerTables = () => {
             hasMore={newTokens.length < newTotalRows}
             onLoadMore={() => loadMoreNewTokens()}
             loadingMore={loadingMoreNew}
+            onServerSort={(sort) => {
+              if (!sort) return;
+              const rankBy = (columnIdToRankBy(sort.id) ?? "age") as SerdeRankBy;
+              const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
+              loadNewTokens({ rankBy, orderBy });
+            }}
           />
         </div>
       </div>

@@ -2,6 +2,8 @@ import type {
   TokenData,
   SupportedChainName,
   GetScannerResultParams,
+  SerdeRankBy,
+  OrderBy,
 } from "../api/types";
 import { fetchScanner } from "../api/scanner";
 import { mapScannerResultToTokenData } from "../api/mapScannerResultToTokenData";
@@ -26,6 +28,11 @@ export interface ScannerTablesState {
   newTotalRows: number;
   loadingMoreTrending: boolean;
   loadingMoreNew: boolean;
+  // server sort state per table
+  trendingRankBy: SerdeRankBy;
+  trendingOrderBy: OrderBy;
+  newRankBy: SerdeRankBy;
+  newOrderBy: OrderBy;
   setFilters: (filters: Partial<ScannerTablesState["filters"]>) => void;
   setTrendingTokens: (tokens: TokenData[]) => void;
   setNewTokens: (tokens: TokenData[]) => void;
@@ -34,6 +41,12 @@ export interface ScannerTablesState {
   loadTokens: () => Promise<void>;
   loadMoreTrendingTokens: () => Promise<void>;
   loadMoreNewTokens: () => Promise<void>;
+  loadTrendingTokens: (opts?: { rankBy?: SerdeRankBy; orderBy?: OrderBy }) => Promise<void>;
+  loadNewTokens: (opts?: { rankBy?: SerdeRankBy; orderBy?: OrderBy }) => Promise<void>;
+  setTrendingRankBy: (r: SerdeRankBy) => void;
+  setTrendingOrderBy: (o: OrderBy) => void;
+  setNewRankBy: (r: SerdeRankBy) => void;
+  setNewOrderBy: (o: OrderBy) => void;
 }
 
 export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
@@ -48,6 +61,10 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
   newTotalRows: 0,
   loadingMoreTrending: false,
   loadingMoreNew: false,
+  trendingRankBy: "volume",
+  trendingOrderBy: "desc",
+  newRankBy: "age",
+  newOrderBy: "desc",
   filters: {
     chain: "SOL",
     minVolume: 0,
@@ -62,38 +79,11 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
   loadTokens: async () => {
+    // load both tables using per-table rank/order preferences
     set({ loading: true, error: null });
     try {
-      const { filters } = get();
-      // Trending Tokens: сортировка по volume
-      const trendingParams: GetScannerResultParams = {
-        chain: filters.chain,
-        rankBy: "volume",
-        isNotHP: filters.excludeHoneypots,
-        minVol24H: filters.minVolume,
-        // minMcap: filters.minMcap, // нет такого поля в GetScannerResultParams
-        maxAge: filters.maxAge,
-        page: 1,
-      };
-      const trendingRes = await fetchScanner(trendingParams);
-      const trendingTokens = trendingRes.pairs.map(mapScannerResultToTokenData);
-      // reset pagination state for trending
-      set({ trendingTokens, trendingPage: 1, trendingTotalRows: trendingRes.totalRows });
-
-      // New Tokens: сортировка по age
-      const newParams: GetScannerResultParams = {
-        chain: filters.chain,
-        rankBy: "age",
-        isNotHP: filters.excludeHoneypots,
-        minVol24H: filters.minVolume,
-        // minMcap: filters.minMcap, // нет такого поля в GetScannerResultParams
-        maxAge: filters.maxAge,
-        page: 1,
-      };
-      const newRes = await fetchScanner(newParams);
-      const newTokens = newRes.pairs.map(mapScannerResultToTokenData);
-      // reset pagination state for new tokens
-      set({ newTokens, newPage: 1, newTotalRows: newRes.totalRows });
+      await get().loadTrendingTokens();
+      await get().loadNewTokens();
       set({ loading: false });
     } catch (e: unknown) {
       set({
@@ -102,16 +92,63 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
       });
     }
   },
+  loadTrendingTokens: async (opts) => {
+    set({ loading: true, error: null });
+    try {
+      const { filters, trendingRankBy, trendingOrderBy } = get();
+      const rankBy = opts?.rankBy ?? trendingRankBy ?? ("volume" as SerdeRankBy);
+      const orderBy = opts?.orderBy ?? trendingOrderBy ?? ("desc" as OrderBy);
+      const params: GetScannerResultParams = {
+        chain: filters.chain,
+        rankBy,
+        orderBy,
+        isNotHP: filters.excludeHoneypots,
+        minVol24H: filters.minVolume,
+        maxAge: filters.maxAge,
+        page: 1,
+      };
+      const res = await fetchScanner(params);
+      const tokens = res.pairs.map(mapScannerResultToTokenData);
+      set({ trendingTokens: tokens, trendingPage: 1, trendingTotalRows: res.totalRows });
+      set({ loading: false });
+    } catch (e: unknown) {
+      set({ error: e instanceof Error ? e.message : "API error", loading: false });
+    }
+  },
+  loadNewTokens: async (opts) => {
+    set({ loading: true, error: null });
+    try {
+      const { filters, newRankBy, newOrderBy } = get();
+      const rankBy = opts?.rankBy ?? newRankBy ?? ("age" as SerdeRankBy);
+      const orderBy = opts?.orderBy ?? newOrderBy ?? ("desc" as OrderBy);
+      const params: GetScannerResultParams = {
+        chain: filters.chain,
+        rankBy,
+        orderBy,
+        isNotHP: filters.excludeHoneypots,
+        minVol24H: filters.minVolume,
+        maxAge: filters.maxAge,
+        page: 1,
+      };
+      const res = await fetchScanner(params);
+      const tokens = res.pairs.map(mapScannerResultToTokenData);
+      set({ newTokens: tokens, newPage: 1, newTotalRows: res.totalRows });
+      set({ loading: false });
+    } catch (e: unknown) {
+      set({ error: e instanceof Error ? e.message : "API error", loading: false });
+    }
+  },
   loadMoreTrendingTokens: async () => {
     const state = get();
     if (state.trendingTokens.length >= state.trendingTotalRows) return;
     set({ loadingMoreTrending: true });
     try {
-      const { filters, trendingPage } = get();
+      const { filters, trendingPage, trendingRankBy, trendingOrderBy } = get();
       const nextPage = trendingPage + 1;
       const params: GetScannerResultParams = {
         chain: filters.chain,
-        rankBy: "volume",
+        rankBy: trendingRankBy,
+        orderBy: trendingOrderBy,
         isNotHP: filters.excludeHoneypots,
         minVol24H: filters.minVolume,
         maxAge: filters.maxAge,
@@ -134,11 +171,12 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
     if (state.newTokens.length >= state.newTotalRows) return;
     set({ loadingMoreNew: true });
     try {
-      const { filters, newPage } = get();
+      const { filters, newPage, newRankBy, newOrderBy } = get();
       const nextPage = newPage + 1;
       const params: GetScannerResultParams = {
         chain: filters.chain,
-        rankBy: "age",
+        rankBy: newRankBy,
+        orderBy: newOrderBy,
         isNotHP: filters.excludeHoneypots,
         minVol24H: filters.minVolume,
         maxAge: filters.maxAge,
@@ -155,4 +193,8 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
       set({ loadingMoreNew: false });
     }
   },
+  setTrendingRankBy: (r) => set({ trendingRankBy: r }),
+  setTrendingOrderBy: (o) => set({ trendingOrderBy: o }),
+  setNewRankBy: (r) => set({ newRankBy: r }),
+  setNewOrderBy: (o) => set({ newOrderBy: o }),
 }));

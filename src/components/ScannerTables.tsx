@@ -3,8 +3,17 @@ import { useScannerTablesStore } from "../stores/scannerTablesStore";
 import { ScannerTableFilters } from "./ScannerTableFilters";
 import { ScannerTable } from "./ScannerTable";
 import type { TokenData } from "../api/types";
+import type { ColumnDef } from "@tanstack/react-table";
+
+// Helper: return css class for pcs value
+const getPcsClass = (val: number) =>
+  val > 0 ? "text-green-600" : val < 0 ? "text-red-600" : "";
+
+// Helper: format pcs value, show '-' when NaN
+const formatPcsValue = (val: number) => (Number.isNaN(val) ? "-" : `${val}%`);
 
 const ScannerTables = () => {
+  // Additional imports for new columns
   const {
     trendingTokens,
     newTokens,
@@ -12,9 +21,16 @@ const ScannerTables = () => {
     error,
     filters,
     setFilters,
-    loadTokens,
+  loadTokens,
+  loadMoreTrendingTokens,
+  loadMoreNewTokens,
+  trendingTotalRows,
+  newTotalRows,
+  loadingMoreTrending,
+  loadingMoreNew,
   } = useScannerTablesStore();
 
+  // Load tokens on filter change
   useEffect(() => {
     loadTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -25,43 +41,144 @@ const ScannerTables = () => {
     filters.excludeHoneypots,
   ]);
 
-  // Описание колонок для таблицы
-  const columns: {
-    key: string;
-    header: string;
-    render: (t: TokenData) => React.ReactNode;
-    className?: string;
-  }[] = [
+  const columns: ColumnDef<TokenData, unknown>[] = [
     {
-      key: "token",
+      accessorKey: "tokenName",
       header: "Token",
-      render: (t) => (
+      cell: ({ row }) => (
         <>
-          {t.tokenName}{" "}
-          <span className="text-xs text-gray-500">({t.tokenSymbol})</span>
+          {row.original.tokenName}{" "}
+          <span className="text-xs text-gray-500">
+            ({row.original.tokenSymbol})
+          </span>
         </>
       ),
-      className: "p-2 text-left",
+      meta: { className: "p-2 text-left" },
     },
     {
-      key: "priceUsd",
+      accessorKey: "chain",
+      header: "Chain",
+      cell: ({ getValue }) => String(getValue()),
+      meta: { className: "p-2 text-center" },
+    },
+    {
+      accessorKey: "exchange",
+      header: "Exchange",
+      cell: ({ getValue }) => String(getValue()),
+      meta: { className: "p-2 text-center" },
+    },
+    {
+      accessorKey: "priceUsd",
       header: "Price",
-      render: (t) => (t.priceUsd ? t.priceUsd.toFixed(4) : "0.0000"),
-      className: "p-2 text-right",
+      cell: ({ getValue }) => {
+        const value = getValue();
+        return typeof value === "number" ? value.toFixed(4) : "0.0000";
+      },
+      meta: { className: "p-2 text-right" },
     },
     {
-      key: "volumeUsd",
+      accessorKey: "volumeUsd",
       header: "Volume",
-      render: (t) =>
-        isNaN(Number(t.volumeUsd)) ? "-" : Number(t.volumeUsd).toLocaleString(),
-      className: "p-2 text-right",
+      cell: ({ getValue }) => {
+        const value = getValue();
+        return isNaN(Number(value)) ? "0" : Number(value).toLocaleString();
+      },
+      meta: { className: "p-2 text-right" },
     },
     {
-      key: "mcap",
+      accessorKey: "mcap",
       header: "Mcap",
-      render: (t) =>
-        isNaN(Number(t.mcap)) ? "0" : Number(t.mcap).toLocaleString(),
-      className: "p-2 text-right",
+      cell: ({ getValue }) => {
+        const value = getValue();
+        return isNaN(Number(value)) ? "0" : Number(value).toLocaleString();
+      },
+      meta: { className: "p-2 text-right" },
+    },
+    {
+      id: "priceChangePcs",
+      header: "Price Change",
+      cell: ({ row }) => {
+        const pcs = row.original.priceChangePcs;
+
+        return (
+          <div className="flex gap-1 text-xs">
+            <span className={getPcsClass(pcs["5m"])}>
+              {formatPcsValue(pcs["5m"])}
+            </span>
+            <span className={getPcsClass(pcs["1h"])}>
+              {formatPcsValue(pcs["1h"])}
+            </span>
+            <span className={getPcsClass(pcs["6h"])}>
+              {formatPcsValue(pcs["6h"])}
+            </span>
+            <span className={getPcsClass(pcs["24h"])}>
+              {formatPcsValue(pcs["24h"])}
+            </span>
+          </div>
+        );
+      },
+      meta: { className: "p-2 text-right" },
+    },
+    {
+      id: "age",
+      header: "Age",
+      cell: ({ row }) => {
+        const created = row.original.tokenCreatedTimestamp;
+        if (!created) return "-";
+        const now = Date.now();
+        const ageMs = now - new Date(created).getTime();
+        const ageHrs = Math.floor(ageMs / 1000 / 60 / 60);
+        return `${ageHrs}h`;
+      },
+      meta: { className: "p-2 text-right" },
+    },
+    {
+      id: "buysSells",
+      header: "Buys/Sells",
+      cell: ({ row }) => {
+        const tx = row.original.transactions;
+        return (
+          <span>
+            {tx.buys}/{tx.sells}
+          </span>
+        );
+      },
+      meta: { className: "p-2 text-center" },
+    },
+    {
+      id: "liquidity",
+      header: "Liquidity",
+      cell: ({ row }) => {
+        const lq = row.original.liquidity;
+        return (
+          <span>
+            {lq.current.toLocaleString()} ({lq.changePc}%)
+          </span>
+        );
+      },
+      meta: { className: "p-2 text-right" },
+    },
+    {
+      id: "audit",
+      header: "Audit",
+      cell: ({ row }) => {
+        const audit = row.original.audit;
+        return (
+          <div className="flex gap-1 text-xs">
+            {audit.contractVerified && (
+              <span className="text-green-600">✔️</span>
+            )}
+            {audit.mintable && (
+              <span className="text-yellow-600">Mintable</span>
+            )}
+            {audit.freezable && (
+              <span className="text-yellow-600">Freezable</span>
+            )}
+            {audit.honeypot && <span className="text-red-600">Honeypot</span>}
+          </div>
+        );
+      },
+      meta: { className: "p-2 text-center" },
     },
   ];
 
@@ -91,6 +208,9 @@ const ScannerTables = () => {
             title="Trending Tokens"
             loading={loading}
             error={error}
+            hasMore={trendingTokens.length < trendingTotalRows}
+            onLoadMore={() => loadMoreTrendingTokens()}
+            loadingMore={loadingMoreTrending}
           />
         </div>
         <div className="w-1/2">
@@ -100,6 +220,9 @@ const ScannerTables = () => {
             title="New Tokens"
             loading={loading}
             error={error}
+            hasMore={newTokens.length < newTotalRows}
+            onLoadMore={() => loadMoreNewTokens()}
+            loadingMore={loadingMoreNew}
           />
         </div>
       </div>

@@ -74,6 +74,11 @@ export interface TokenData {
   volumeUsd: number;
   mcap: number;
   tokenImageUri?: string | null;
+  // internal fields used for realtime recalculation
+  token1TotalSupplyRaw?: string;
+  totalSupply?: number;
+  token1Decimals?: number;
+  token0Decimals?: number;
   priceChangePcs: {
     "5m": number;
     "1h": number;
@@ -95,6 +100,13 @@ export interface TokenData {
     current: number;
     changePc: number;
   };
+  // optional pair-stats fields
+  linkDiscord?: string | null;
+  linkTelegram?: string | null;
+  linkTwitter?: string | null;
+  linkWebsite?: string | null;
+  dexPaid?: boolean;
+  migrationPc?: number | null;
 }
 
 /**

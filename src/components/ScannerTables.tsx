@@ -106,6 +106,55 @@ const ScannerTables = () => {
                   <span className="text-yellow-400">F</span>
                 )}
                 {t.audit.honeypot && <span className="text-red-500">H</span>}
+                {/* social links */}
+                {t.linkTwitter && (
+                  <a
+                    href={t.linkTwitter}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-400 ml-2"
+                  >
+                    T
+                  </a>
+                )}
+                {t.linkTelegram && (
+                  <a
+                    href={t.linkTelegram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-300 ml-1"
+                  >
+                    TG
+                  </a>
+                )}
+                {t.linkDiscord && (
+                  <a
+                    href={t.linkDiscord}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-indigo-400 ml-1"
+                  >
+                    D
+                  </a>
+                )}
+                {t.linkWebsite && (
+                  <a
+                    href={t.linkWebsite}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-gray-400 ml-1"
+                  >
+                    W
+                  </a>
+                )}
+                {t.dexPaid && (
+                  <span className="ml-2 text-sm text-green-500">paid</span>
+                )}
+                {typeof t.migrationPc === "number" && (
+                  <span className="ml-2 text-xs text-gray-300">
+                    mig {t.migrationPc}%
+                  </span>
+                )}
               </div>
             </div>
           </div>

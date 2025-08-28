@@ -1,5 +1,28 @@
 import type { ScannerResult, TokenData } from "./types";
 
+function parseHumanNumber(input?: string): number {
+  if (!input) return 0;
+  const s = String(input).trim();
+  // remove commas and spaces
+  const cleaned = s.replace(/[,\s]/g, "").toUpperCase();
+  // handle suffixes K, M, B
+  const match = cleaned.match(/^([0-9]*\.?[0-9]+)([KMB])?$/i);
+  if (!match) return Number(cleaned) || 0;
+  const val = Number(match[1]);
+  const suffix = match[2];
+  if (!suffix) return val;
+  switch (suffix) {
+    case "K":
+      return val * 1e3;
+    case "M":
+      return val * 1e6;
+    case "B":
+      return val * 1e9;
+    default:
+      return val;
+  }
+}
+
 // Маппинг ScannerResult -> TokenData
 export function mapScannerResultToTokenData(result: ScannerResult): TokenData {
   // Market Cap calculation priority
@@ -11,12 +34,15 @@ export function mapScannerResultToTokenData(result: ScannerResult): TokenData {
     mcap = parseFloat(result.pairMcapUsd);
   else if (parseFloat(result.pairMcapUsdInitial) > 0)
     mcap = parseFloat(result.pairMcapUsdInitial);
-  else if (
-    parseFloat(result.token1TotalSupplyFormatted) > 0 &&
-    parseFloat(result.price) > 0
-  ) {
-    mcap =
-      parseFloat(result.token1TotalSupplyFormatted) * parseFloat(result.price);
+  else {
+    // fallback: try parsing human-friendly total supply (e.g. 1.5M, 1,000,000)
+    const parsedTotalSupply = parseHumanNumber(
+      result.token1TotalSupplyFormatted
+    );
+    const price = parseFloat(result.price) || 0;
+    if (parsedTotalSupply > 0 && price > 0) {
+      mcap = parsedTotalSupply * price;
+    }
   }
 
   return {
@@ -38,6 +64,11 @@ export function mapScannerResultToTokenData(result: ScannerResult): TokenData {
     priceUsd: parseFloat(result.price),
     volumeUsd: parseFloat(result.volume),
     mcap,
+    // keep raw total supply and parsed numeric total supply for realtime updates
+    token1TotalSupplyRaw: result.token1TotalSupplyFormatted,
+    totalSupply: parseHumanNumber(result.token1TotalSupplyFormatted),
+    token1Decimals: Number(result.token1Decimals) || 0,
+    token0Decimals: Number(result.token0Decimals) || 0,
     priceChangePcs: {
       "5m": parseFloat(result.diff5M),
       "1h": parseFloat(result.diff1H),

@@ -42,7 +42,7 @@ export function ScannerTable<T extends { id: string }>({
   title,
   loading,
   error,
-  emptyText = "Нет данных",
+  emptyText = "No data",
   hasMore = false,
   onLoadMore,
   loadingMore = false,
@@ -117,9 +117,6 @@ export function ScannerTable<T extends { id: string }>({
         ref={parentRef}
         className="relative border rounded bg-white dark:bg-gray-900 min-h-[400px] max-h-[600px] overflow-y-auto"
       >
-        {data.length === 0 && !loading && !error && (
-          <div className="p-4 text-gray-400">{emptyText}</div>
-        )}
         {data.length > 0 && (
           <Table className="w-full text-sm text-black dark:text-white">
             <TableHeader>
@@ -217,6 +214,11 @@ export function ScannerTable<T extends { id: string }>({
         {error && (
           <div className="p-4 text-red-500 bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded">
             {error}
+          </div>
+        )}
+        {data.length === 0 && !loading && !error && (
+          <div className="p-4 text-gray-400 w-full h-full absolute top-0 left-0 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm">
+            <div className="p-4 text-gray-400">{emptyText}</div>
           </div>
         )}
         {/* Infinite-scroll sentinel: when it becomes visible inside parentRef, call onLoadMore */}

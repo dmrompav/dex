@@ -36,7 +36,11 @@ const ScannerTables = () => {
     setTrendingOrderBy,
   } = useScannerTablesStore();
 
-  // Load tokens on filter change
+  // stable keys for array filters to use in deps
+  const dexesKey = filters.dexes ? JSON.stringify(filters.dexes) : "";
+  const virtualDexesKey = filters.virtualDexes ? JSON.stringify(filters.virtualDexes) : "";
+
+  // Load tokens on filter change — include all filter fields so new controls trigger reload
   useEffect(() => {
     loadTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -45,20 +49,58 @@ const ScannerTables = () => {
     filters.minVolume,
     filters.maxAge,
     filters.excludeHoneypots,
+    filters.minMcap,
+    filters.minLiq,
+    filters.maxLiq,
+    filters.minBuys24H,
+    filters.minSells24H,
+    filters.minTxns24H,
+    filters.isVerified,
+    filters.timeFrame,
+    dexesKey,
+    virtualDexesKey,
   ]);
 
   const columns: ColumnDef<TokenData, unknown>[] = [
     {
       accessorKey: "tokenName",
       header: "Token",
-      cell: ({ row }) => (
-        <>
-          {row.original.tokenName}{" "}
-          <span className="text-xs text-gray-500">
-            ({row.original.tokenSymbol})
-          </span>
-        </>
-      ),
+      cell: ({ row }) => {
+        const t = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+              {t.tokenImageUri ? (
+                // show image when available
+                <img src={t.tokenImageUri} alt={t.tokenSymbol} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold">
+                  {t.tokenSymbol ? String(t.tokenSymbol).slice(0, 2).toUpperCase() : "?"}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{t.tokenName}</span>
+                <span className="text-xs text-gray-500">({t.tokenSymbol})</span>
+                <span className="ml-2 text-[10px] font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                  {t.chain}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span>{t.exchange}</span>
+                {/* Inline audit badges */}
+                {t.audit.contractVerified && (
+                  <span className="text-green-500">✔</span>
+                )}
+                {t.audit.mintable && <span className="text-yellow-400">M</span>}
+                {t.audit.freezable && <span className="text-yellow-400">F</span>}
+                {t.audit.honeypot && <span className="text-red-500">H</span>}
+              </div>
+            </div>
+          </div>
+        );
+      },
       meta: { className: "p-2 text-left" },
     },
     {
@@ -218,6 +260,14 @@ const ScannerTables = () => {
         minVolume={filters.minVolume}
         maxAge={filters.maxAge}
         excludeHoneypots={filters.excludeHoneypots}
+        minMcap={filters.minMcap}
+        minLiq={filters.minLiq}
+        maxLiq={filters.maxLiq}
+        minBuys24H={filters.minBuys24H}
+        minSells24H={filters.minSells24H}
+        minTxns24H={filters.minTxns24H}
+        isVerified={filters.isVerified}
+        timeFrame={filters.timeFrame ?? null}
         setChain={(chain) =>
           setFilters({ ...filters, chain: chain as typeof filters.chain })
         }
@@ -226,6 +276,14 @@ const ScannerTables = () => {
         setExcludeHoneypots={(excludeHoneypots) =>
           setFilters({ ...filters, excludeHoneypots })
         }
+        setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
+        setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
+        setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
+        setMinBuys24H={(v) => setFilters({ ...filters, minBuys24H: v ?? null })}
+        setMinSells24H={(v) => setFilters({ ...filters, minSells24H: v ?? null })}
+        setMinTxns24H={(v) => setFilters({ ...filters, minTxns24H: v ?? null })}
+        setIsVerified={(v) => setFilters({ ...filters, isVerified: v ?? null })}
+        setTimeFrame={(v) => setFilters({ ...filters, timeFrame: v ?? null })}
       />
       {/* Таблицы */}
       <div className="flex gap-4">

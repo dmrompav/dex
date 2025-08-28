@@ -34,6 +34,7 @@ export function mapScannerResultToTokenData(result: ScannerResult): TokenData {
         ? "BASE"
         : "BSC",
     exchange: result.routerAddress || result.virtualRouterType || "",
+  tokenImageUri: result.token1ImageUri ?? null,
     priceUsd: parseFloat(result.price),
     volumeUsd: parseFloat(result.volume),
     mcap,

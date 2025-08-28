@@ -73,6 +73,7 @@ export interface TokenData {
   priceUsd: number;
   volumeUsd: number;
   mcap: number;
+  tokenImageUri?: string | null;
   priceChangePcs: {
     "5m": number;
     "1h": number;

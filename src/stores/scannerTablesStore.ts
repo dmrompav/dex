@@ -4,6 +4,7 @@ import type {
   GetScannerResultParams,
   SerdeRankBy,
   OrderBy,
+  TimeFrame,
 } from "../api/types";
 import { fetchScanner } from "../api/scanner";
 import { mapScannerResultToTokenData } from "../api/mapScannerResultToTokenData";
@@ -15,11 +16,20 @@ export interface ScannerTablesState {
   loading: boolean;
   error: string | null;
   filters: {
-    chain: SupportedChainName;
-    minVolume: number;
-    maxAge: number;
-    minMcap: number;
-    excludeHoneypots: boolean;
+  chain: SupportedChainName;
+  minVolume: number;
+  maxAge: number;
+  minMcap: number; // client-side only, API doesn't expose minMcap param
+  excludeHoneypots: boolean;
+  minLiq: number | null;
+  maxLiq: number | null;
+  minBuys24H: number | null;
+  minSells24H: number | null;
+  minTxns24H: number | null;
+  isVerified: boolean | null;
+  dexes: string[] | null;
+  virtualDexes: string[] | null;
+  timeFrame?: TimeFrame | null;
   };
   // pagination state
   trendingPage: number;
@@ -76,11 +86,20 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
   newRankBy: "age",
   newOrderBy: "desc",
   filters: {
-    chain: "SOL",
-    minVolume: 0,
-    maxAge: 86400,
-    minMcap: 0,
-    excludeHoneypots: true,
+  chain: "SOL",
+  minVolume: 0,
+  maxAge: 86400,
+  minMcap: 0,
+  excludeHoneypots: true,
+  minLiq: null,
+  maxLiq: null,
+  minBuys24H: null,
+  minSells24H: null,
+  minTxns24H: null,
+  isVerified: null,
+  dexes: null,
+  virtualDexes: null,
+  timeFrame: null,
   },
   setFilters: (filters) =>
     set((state) => ({ filters: { ...state.filters, ...filters } })),
@@ -119,10 +138,24 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         isNotHP: filters.excludeHoneypots,
         minVol24H: filters.minVolume,
         maxAge: filters.maxAge,
+        // server-side supported filters
+        minLiq: filters.minLiq ?? undefined,
+        maxLiq: filters.maxLiq ?? undefined,
+        minBuys24H: filters.minBuys24H ?? undefined,
+        minSells24H: filters.minSells24H ?? undefined,
+        minTxns24H: filters.minTxns24H ?? undefined,
+        isVerified: filters.isVerified ?? undefined,
+        dexes: filters.dexes ?? undefined,
+        virtualDexes: filters.virtualDexes ?? undefined,
+  timeFrame: filters.timeFrame ?? undefined,
         page: 1,
       };
       const res = await fetchScanner(params);
-      const tokens = res.pairs.map(mapScannerResultToTokenData);
+      let tokens = res.pairs.map(mapScannerResultToTokenData);
+      // client-side filter: minMcap (API does not expose minMcap param)
+      if (filters.minMcap && filters.minMcap > 0) {
+        tokens = tokens.filter((t) => t.mcap >= filters.minMcap);
+      }
       set({
         trendingTokens: tokens,
         trendingPage: 1,
@@ -149,10 +182,24 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         isNotHP: filters.excludeHoneypots,
         minVol24H: filters.minVolume,
         maxAge: filters.maxAge,
+        // server-side supported filters
+        minLiq: filters.minLiq ?? undefined,
+        maxLiq: filters.maxLiq ?? undefined,
+        minBuys24H: filters.minBuys24H ?? undefined,
+        minSells24H: filters.minSells24H ?? undefined,
+        minTxns24H: filters.minTxns24H ?? undefined,
+        isVerified: filters.isVerified ?? undefined,
+        dexes: filters.dexes ?? undefined,
+        virtualDexes: filters.virtualDexes ?? undefined,
+  timeFrame: filters.timeFrame ?? undefined,
         page: 1,
       };
       const res = await fetchScanner(params);
-      const tokens = res.pairs.map(mapScannerResultToTokenData);
+      let tokens = res.pairs.map(mapScannerResultToTokenData);
+      // client-side filter: minMcap (API does not expose minMcap param)
+      if (filters.minMcap && filters.minMcap > 0) {
+        tokens = tokens.filter((t) => t.mcap >= filters.minMcap);
+      }
       set({
         newTokens: tokens,
         newPage: 1,
@@ -180,13 +227,24 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         isNotHP: filters.excludeHoneypots,
         minVol24H: filters.minVolume,
         maxAge: filters.maxAge,
+        // server-side supported filters
+        minLiq: filters.minLiq ?? undefined,
+        maxLiq: filters.maxLiq ?? undefined,
+        minBuys24H: filters.minBuys24H ?? undefined,
+        minSells24H: filters.minSells24H ?? undefined,
+        minTxns24H: filters.minTxns24H ?? undefined,
+        isVerified: filters.isVerified ?? undefined,
+        dexes: filters.dexes ?? undefined,
+        virtualDexes: filters.virtualDexes ?? undefined,
+  timeFrame: filters.timeFrame ?? undefined,
         page: nextPage,
       };
       const res = await fetchScanner(params);
       const more = res.pairs.map(mapScannerResultToTokenData);
+        const filtered = filters.minMcap && filters.minMcap > 0 ? more.filter((t)=>t.mcap>=filters.minMcap) : more;
       // append while preventing duplicates
       const existingIds = new Set(get().trendingTokens.map((t) => t.id));
-      const appended = more.filter((t) => !existingIds.has(t.id));
+      const appended = filtered.filter((t) => !existingIds.has(t.id));
       set({
         trendingTokens: [...get().trendingTokens, ...appended],
         trendingPage: nextPage,

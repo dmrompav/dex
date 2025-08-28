@@ -28,6 +28,8 @@ export interface ScannerTablesState {
   newTotalRows: number;
   loadingMoreTrending: boolean;
   loadingMoreNew: boolean;
+  trendingLoading: boolean;
+  newLoading: boolean;
   // server sort state per table
   trendingRankBy: SerdeRankBy;
   trendingOrderBy: OrderBy;
@@ -41,8 +43,14 @@ export interface ScannerTablesState {
   loadTokens: () => Promise<void>;
   loadMoreTrendingTokens: () => Promise<void>;
   loadMoreNewTokens: () => Promise<void>;
-  loadTrendingTokens: (opts?: { rankBy?: SerdeRankBy; orderBy?: OrderBy }) => Promise<void>;
-  loadNewTokens: (opts?: { rankBy?: SerdeRankBy; orderBy?: OrderBy }) => Promise<void>;
+  loadTrendingTokens: (opts?: {
+    rankBy?: SerdeRankBy;
+    orderBy?: OrderBy;
+  }) => Promise<void>;
+  loadNewTokens: (opts?: {
+    rankBy?: SerdeRankBy;
+    orderBy?: OrderBy;
+  }) => Promise<void>;
   setTrendingRankBy: (r: SerdeRankBy) => void;
   setTrendingOrderBy: (o: OrderBy) => void;
   setNewRankBy: (r: SerdeRankBy) => void;
@@ -61,6 +69,8 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
   newTotalRows: 0,
   loadingMoreTrending: false,
   loadingMoreNew: false,
+  trendingLoading: false,
+  newLoading: false,
   trendingRankBy: "volume",
   trendingOrderBy: "desc",
   newRankBy: "age",
@@ -76,27 +86,31 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
     set((state) => ({ filters: { ...state.filters, ...filters } })),
   setTrendingTokens: (tokens) => set({ trendingTokens: tokens }),
   setNewTokens: (tokens) => set({ newTokens: tokens }),
-  setLoading: (loading) => set({ loading }),
+  // setLoading kept for backwards compatibility: sets global and per-table flags
+  setLoading: (loading) =>
+    set({ loading, trendingLoading: loading, newLoading: loading }),
   setError: (error) => set({ error }),
   loadTokens: async () => {
     // load both tables using per-table rank/order preferences
-    set({ loading: true, error: null });
+    set({ error: null, trendingLoading: true, newLoading: true });
     try {
       await get().loadTrendingTokens();
       await get().loadNewTokens();
-      set({ loading: false });
+      set({ trendingLoading: false, newLoading: false });
     } catch (e: unknown) {
       set({
         error: e instanceof Error ? e.message : "API error",
-        loading: false,
+        trendingLoading: false,
+        newLoading: false,
       });
     }
   },
   loadTrendingTokens: async (opts) => {
-    set({ loading: true, error: null });
+    set({ trendingLoading: true, error: null });
     try {
       const { filters, trendingRankBy, trendingOrderBy } = get();
-      const rankBy = opts?.rankBy ?? trendingRankBy ?? ("volume" as SerdeRankBy);
+      const rankBy =
+        opts?.rankBy ?? trendingRankBy ?? ("volume" as SerdeRankBy);
       const orderBy = opts?.orderBy ?? trendingOrderBy ?? ("desc" as OrderBy);
       const params: GetScannerResultParams = {
         chain: filters.chain,
@@ -109,14 +123,21 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
       };
       const res = await fetchScanner(params);
       const tokens = res.pairs.map(mapScannerResultToTokenData);
-      set({ trendingTokens: tokens, trendingPage: 1, trendingTotalRows: res.totalRows });
-      set({ loading: false });
+      set({
+        trendingTokens: tokens,
+        trendingPage: 1,
+        trendingTotalRows: res.totalRows,
+        trendingLoading: false,
+      });
     } catch (e: unknown) {
-      set({ error: e instanceof Error ? e.message : "API error", loading: false });
+      set({
+        error: e instanceof Error ? e.message : "API error",
+        trendingLoading: false,
+      });
     }
   },
   loadNewTokens: async (opts) => {
-    set({ loading: true, error: null });
+    set({ newLoading: true, error: null });
     try {
       const { filters, newRankBy, newOrderBy } = get();
       const rankBy = opts?.rankBy ?? newRankBy ?? ("age" as SerdeRankBy);
@@ -132,10 +153,17 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
       };
       const res = await fetchScanner(params);
       const tokens = res.pairs.map(mapScannerResultToTokenData);
-      set({ newTokens: tokens, newPage: 1, newTotalRows: res.totalRows });
-      set({ loading: false });
+      set({
+        newTokens: tokens,
+        newPage: 1,
+        newTotalRows: res.totalRows,
+        newLoading: false,
+      });
     } catch (e: unknown) {
-      set({ error: e instanceof Error ? e.message : "API error", loading: false });
+      set({
+        error: e instanceof Error ? e.message : "API error",
+        newLoading: false,
+      });
     }
   },
   loadMoreTrendingTokens: async () => {
@@ -159,7 +187,11 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
       // append while preventing duplicates
       const existingIds = new Set(get().trendingTokens.map((t) => t.id));
       const appended = more.filter((t) => !existingIds.has(t.id));
-      set({ trendingTokens: [...get().trendingTokens, ...appended], trendingPage: nextPage, trendingTotalRows: res.totalRows });
+      set({
+        trendingTokens: [...get().trendingTokens, ...appended],
+        trendingPage: nextPage,
+        trendingTotalRows: res.totalRows,
+      });
     } catch (e: unknown) {
       set({ error: e instanceof Error ? e.message : "API error" });
     } finally {
@@ -186,7 +218,11 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
       const more = res.pairs.map(mapScannerResultToTokenData);
       const existingIds = new Set(get().newTokens.map((t) => t.id));
       const appended = more.filter((t) => !existingIds.has(t.id));
-      set({ newTokens: [...get().newTokens, ...appended], newPage: nextPage, newTotalRows: res.totalRows });
+      set({
+        newTokens: [...get().newTokens, ...appended],
+        newPage: nextPage,
+        newTotalRows: res.totalRows,
+      });
     } catch (e: unknown) {
       set({ error: e instanceof Error ? e.message : "API error" });
     } finally {

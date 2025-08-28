@@ -33,6 +33,7 @@ interface ScannerTableProps<T extends { id: string }> {
   loadingMore?: boolean;
   // Called when the header sorting changes. Passes first sort entry or null.
   onServerSort?: (sort: { id: string; desc: boolean } | null) => void;
+  sortable?: boolean;
 }
 
 export function ScannerTable<T extends { id: string }>({
@@ -46,29 +47,30 @@ export function ScannerTable<T extends { id: string }>({
   onLoadMore,
   loadingMore = false,
   onServerSort,
+  sortable = true,
 }: ScannerTableProps<T>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
-    onSortingChange: (updater) => {
-      // updater can be a value or a function (Updater<SortingState>)
-      const newSorting =
-        typeof updater === "function"
-          ? (updater as (old: SortingState) => SortingState)(sorting)
-          : (updater as SortingState);
-      setSorting(newSorting);
-      // notify parent for potential server-side sorting
-      if (onServerSort) {
-        const first = newSorting.length > 0 ? newSorting[0] : null;
-        onServerSort(
-          first ? { id: String(first.id), desc: !!first.desc } : null
-        );
-      }
-    },
+    state: sortable ? { sorting } : {},
+    onSortingChange: sortable
+      ? (updater) => {
+          const newSorting =
+            typeof updater === "function"
+              ? (updater as (old: SortingState) => SortingState)(sorting)
+              : (updater as SortingState);
+          setSorting(newSorting);
+          if (onServerSort) {
+            const first = newSorting.length > 0 ? newSorting[0] : null;
+            onServerSort(
+              first ? { id: String(first.id), desc: !!first.desc } : null
+            );
+          }
+        }
+      : undefined,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: sortable ? getSortedRowModel() : undefined,
     debugTable: false,
   });
 
@@ -133,21 +135,22 @@ export function ScannerTable<T extends { id: string }>({
                         (header.column.columnDef.meta as TableMeta)?.className
                       }
                       onClick={
-                        header.column.getCanSort()
+                        sortable && header.column.getCanSort()
                           ? header.column.getToggleSortingHandler()
                           : undefined
                       }
                       style={{
-                        cursor: header.column.getCanSort()
-                          ? "pointer"
-                          : undefined,
+                        cursor:
+                          sortable && header.column.getCanSort()
+                            ? "pointer"
+                            : undefined,
                       }}
                     >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext()
                       )}
-                      {header.column.getCanSort() && (
+                      {sortable && header.column.getCanSort() && (
                         <span>
                           {header.column.getIsSorted() === "asc"
                             ? " ▲"

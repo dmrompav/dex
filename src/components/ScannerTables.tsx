@@ -17,19 +17,23 @@ const ScannerTables = () => {
   const {
     trendingTokens,
     newTokens,
-    loading,
+    // global loading removed in favor of per-table flags
+    trendingLoading,
+    newLoading,
     error,
     filters,
     setFilters,
-  loadTokens,
-  loadMoreTrendingTokens,
-  loadMoreNewTokens,
-  trendingTotalRows,
-  newTotalRows,
-  loadingMoreTrending,
-  loadingMoreNew,
-  loadTrendingTokens,
-  loadNewTokens,
+    loadTokens,
+    loadMoreTrendingTokens,
+    loadMoreNewTokens,
+    trendingTotalRows,
+    newTotalRows,
+    loadingMoreTrending,
+    loadingMoreNew,
+    loadTrendingTokens,
+    loadNewTokens,
+    setTrendingRankBy,
+    setTrendingOrderBy,
   } = useScannerTablesStore();
 
   // Load tokens on filter change
@@ -230,17 +234,27 @@ const ScannerTables = () => {
             columns={columns}
             data={trendingTokens}
             title="Trending Tokens"
-            loading={loading}
+            loading={trendingLoading}
             error={error}
             hasMore={trendingTokens.length < trendingTotalRows}
             onLoadMore={() => loadMoreTrendingTokens()}
             loadingMore={loadingMoreTrending}
             onServerSort={(sort) => {
-              if (!sort) return;
-              const rankBy = (columnIdToRankBy(sort.id) ?? "volume") as SerdeRankBy;
+              // if sort cleared, reset to defaults
+              if (!sort) {
+                setTrendingRankBy("volume");
+                setTrendingOrderBy("desc");
+                loadTrendingTokens({ rankBy: "volume", orderBy: "desc" });
+                return;
+              }
+              const rankBy = (columnIdToRankBy(sort.id) ??
+                "volume") as SerdeRankBy;
               const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
+              setTrendingRankBy(rankBy);
+              setTrendingOrderBy(orderBy);
               loadTrendingTokens({ rankBy, orderBy });
             }}
+            sortable={true}
           />
         </div>
         <div className="w-1/2">
@@ -248,17 +262,19 @@ const ScannerTables = () => {
             columns={columns}
             data={newTokens}
             title="New Tokens"
-            loading={loading}
+            loading={newLoading}
             error={error}
             hasMore={newTokens.length < newTotalRows}
             onLoadMore={() => loadMoreNewTokens()}
             loadingMore={loadingMoreNew}
             onServerSort={(sort) => {
               if (!sort) return;
-              const rankBy = (columnIdToRankBy(sort.id) ?? "age") as SerdeRankBy;
+              const rankBy = (columnIdToRankBy(sort.id) ??
+                "age") as SerdeRankBy;
               const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
               loadNewTokens({ rankBy, orderBy });
             }}
+            sortable={false}
           />
         </div>
       </div>

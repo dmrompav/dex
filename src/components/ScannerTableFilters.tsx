@@ -245,7 +245,9 @@ export const ScannerTableFilters = ({
           type="text"
           inputMode="numeric"
           value={localMinLiq !== "" ? String(localMinLiq) : ""}
-          onChange={(e) => setLocalMinLiq(cleanNumberInput(e.target.value) || "")}
+          onChange={(e) =>
+            setLocalMinLiq(cleanNumberInput(e.target.value) || "")
+          }
           onBlur={(e) => {
             const v = cleanNumberInput(e.target.value);
             setLocalMinLiq(v || "");
@@ -260,7 +262,9 @@ export const ScannerTableFilters = ({
           type="text"
           inputMode="numeric"
           value={localMaxLiq !== "" ? String(localMaxLiq) : ""}
-          onChange={(e) => setLocalMaxLiq(cleanNumberInput(e.target.value) || "")}
+          onChange={(e) =>
+            setLocalMaxLiq(cleanNumberInput(e.target.value) || "")
+          }
           onBlur={(e) => {
             const v = cleanNumberInput(e.target.value);
             setLocalMaxLiq(v || "");
@@ -275,7 +279,9 @@ export const ScannerTableFilters = ({
           type="text"
           inputMode="numeric"
           value={localMinBuys24H !== "" ? String(localMinBuys24H) : ""}
-          onChange={(e) => setLocalMinBuys24H(cleanNumberInput(e.target.value) || "")}
+          onChange={(e) =>
+            setLocalMinBuys24H(cleanNumberInput(e.target.value) || "")
+          }
           onBlur={(e) => {
             const v = cleanNumberInput(e.target.value);
             setLocalMinBuys24H(v || "");
@@ -290,7 +296,9 @@ export const ScannerTableFilters = ({
           type="text"
           inputMode="numeric"
           value={localMinSells24H !== "" ? String(localMinSells24H) : ""}
-          onChange={(e) => setLocalMinSells24H(cleanNumberInput(e.target.value) || "")}
+          onChange={(e) =>
+            setLocalMinSells24H(cleanNumberInput(e.target.value) || "")
+          }
           onBlur={(e) => {
             const v = cleanNumberInput(e.target.value);
             setLocalMinSells24H(v || "");
@@ -305,7 +313,9 @@ export const ScannerTableFilters = ({
           type="text"
           inputMode="numeric"
           value={localMinTxns24H !== "" ? String(localMinTxns24H) : ""}
-          onChange={(e) => setLocalMinTxns24H(cleanNumberInput(e.target.value) || "")}
+          onChange={(e) =>
+            setLocalMinTxns24H(cleanNumberInput(e.target.value) || "")
+          }
           onBlur={(e) => {
             const v = cleanNumberInput(e.target.value);
             setLocalMinTxns24H(v || "");
@@ -316,10 +326,21 @@ export const ScannerTableFilters = ({
       <div className="flex flex-col gap-1">
         <Label htmlFor="isVerified">Verified</Label>
         <Select
-          value={isVerified === null || isVerified === undefined ? "any" : isVerified ? "true" : "false"}
-          onValueChange={(v) => setIsVerified && setIsVerified(v === "any" ? null : v === "true")}
+          value={
+            isVerified === null || isVerified === undefined
+              ? "any"
+              : isVerified
+              ? "true"
+              : "false"
+          }
+          onValueChange={(v) =>
+            setIsVerified && setIsVerified(v === "any" ? null : v === "true")
+          }
         >
-          <SelectTrigger id="isVerified" className="w-[120px] border bg-gray-800 border-gray-800">
+          <SelectTrigger
+            id="isVerified"
+            className="w-[120px] border bg-gray-800 border-gray-800"
+          >
             <SelectValue placeholder="Any" />
           </SelectTrigger>
           <SelectContent className="border bg-gray-900 border-gray-700">
@@ -331,12 +352,20 @@ export const ScannerTableFilters = ({
       </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor="timeFrame">Timeframe</Label>
-  <Select value={timeFrame ?? "any"} onValueChange={(v)=>setTimeFrame && setTimeFrame(v === "any" ? null : (v as TimeFrame))}>
-          <SelectTrigger id="timeFrame" className="w-[120px] border bg-gray-800 border-gray-800">
+        <Select
+          value={timeFrame ?? "any"}
+          onValueChange={(v) =>
+            setTimeFrame && setTimeFrame(v === "any" ? null : (v as TimeFrame))
+          }
+        >
+          <SelectTrigger
+            id="timeFrame"
+            className="w-[120px] border bg-gray-800 border-gray-800"
+          >
             <SelectValue placeholder="Any" />
           </SelectTrigger>
           <SelectContent className="border bg-gray-900 border-gray-700">
-      <SelectItem value="any">Any</SelectItem>
+            <SelectItem value="any">Any</SelectItem>
             <SelectItem value="5M">5M</SelectItem>
             <SelectItem value="1H">1H</SelectItem>
             <SelectItem value="6H">6H</SelectItem>

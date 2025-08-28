@@ -16,20 +16,20 @@ export interface ScannerTablesState {
   loading: boolean;
   error: string | null;
   filters: {
-  chain: SupportedChainName;
-  minVolume: number;
-  maxAge: number;
-  minMcap: number; // client-side only, API doesn't expose minMcap param
-  excludeHoneypots: boolean;
-  minLiq: number | null;
-  maxLiq: number | null;
-  minBuys24H: number | null;
-  minSells24H: number | null;
-  minTxns24H: number | null;
-  isVerified: boolean | null;
-  dexes: string[] | null;
-  virtualDexes: string[] | null;
-  timeFrame?: TimeFrame | null;
+    chain: SupportedChainName;
+    minVolume: number;
+    maxAge: number;
+    minMcap: number; // client-side only, API doesn't expose minMcap param
+    excludeHoneypots: boolean;
+    minLiq: number | null;
+    maxLiq: number | null;
+    minBuys24H: number | null;
+    minSells24H: number | null;
+    minTxns24H: number | null;
+    isVerified: boolean | null;
+    dexes: string[] | null;
+    virtualDexes: string[] | null;
+    timeFrame?: TimeFrame | null;
   };
   // pagination state
   trendingPage: number;
@@ -86,20 +86,20 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
   newRankBy: "age",
   newOrderBy: "desc",
   filters: {
-  chain: "SOL",
-  minVolume: 0,
-  maxAge: 86400,
-  minMcap: 0,
-  excludeHoneypots: true,
-  minLiq: null,
-  maxLiq: null,
-  minBuys24H: null,
-  minSells24H: null,
-  minTxns24H: null,
-  isVerified: null,
-  dexes: null,
-  virtualDexes: null,
-  timeFrame: null,
+    chain: "SOL",
+    minVolume: 0,
+    maxAge: 86400,
+    minMcap: 0,
+    excludeHoneypots: true,
+    minLiq: null,
+    maxLiq: null,
+    minBuys24H: null,
+    minSells24H: null,
+    minTxns24H: null,
+    isVerified: null,
+    dexes: null,
+    virtualDexes: null,
+    timeFrame: null,
   },
   setFilters: (filters) =>
     set((state) => ({ filters: { ...state.filters, ...filters } })),
@@ -147,7 +147,7 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         isVerified: filters.isVerified ?? undefined,
         dexes: filters.dexes ?? undefined,
         virtualDexes: filters.virtualDexes ?? undefined,
-  timeFrame: filters.timeFrame ?? undefined,
+        timeFrame: filters.timeFrame ?? undefined,
         page: 1,
       };
       const res = await fetchScanner(params);
@@ -191,7 +191,7 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         isVerified: filters.isVerified ?? undefined,
         dexes: filters.dexes ?? undefined,
         virtualDexes: filters.virtualDexes ?? undefined,
-  timeFrame: filters.timeFrame ?? undefined,
+        timeFrame: filters.timeFrame ?? undefined,
         page: 1,
       };
       const res = await fetchScanner(params);
@@ -236,12 +236,15 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
         isVerified: filters.isVerified ?? undefined,
         dexes: filters.dexes ?? undefined,
         virtualDexes: filters.virtualDexes ?? undefined,
-  timeFrame: filters.timeFrame ?? undefined,
+        timeFrame: filters.timeFrame ?? undefined,
         page: nextPage,
       };
       const res = await fetchScanner(params);
       const more = res.pairs.map(mapScannerResultToTokenData);
-        const filtered = filters.minMcap && filters.minMcap > 0 ? more.filter((t)=>t.mcap>=filters.minMcap) : more;
+      const filtered =
+        filters.minMcap && filters.minMcap > 0
+          ? more.filter((t) => t.mcap >= filters.minMcap)
+          : more;
       // append while preventing duplicates
       const existingIds = new Set(get().trendingTokens.map((t) => t.id));
       const appended = filtered.filter((t) => !existingIds.has(t.id));

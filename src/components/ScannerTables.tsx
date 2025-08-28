@@ -38,7 +38,9 @@ const ScannerTables = () => {
 
   // stable keys for array filters to use in deps
   const dexesKey = filters.dexes ? JSON.stringify(filters.dexes) : "";
-  const virtualDexesKey = filters.virtualDexes ? JSON.stringify(filters.virtualDexes) : "";
+  const virtualDexesKey = filters.virtualDexes
+    ? JSON.stringify(filters.virtualDexes)
+    : "";
 
   // Load tokens on filter change — include all filter fields so new controls trigger reload
   useEffect(() => {
@@ -72,10 +74,16 @@ const ScannerTables = () => {
             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
               {t.tokenImageUri ? (
                 // show image when available
-                <img src={t.tokenImageUri} alt={t.tokenSymbol} className="w-full h-full object-cover" />
+                <img
+                  src={t.tokenImageUri}
+                  alt={t.tokenSymbol}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <span className="text-xs font-bold">
-                  {t.tokenSymbol ? String(t.tokenSymbol).slice(0, 2).toUpperCase() : "?"}
+                  {t.tokenSymbol
+                    ? String(t.tokenSymbol).slice(0, 2).toUpperCase()
+                    : "?"}
                 </span>
               )}
             </div>
@@ -94,7 +102,9 @@ const ScannerTables = () => {
                   <span className="text-green-500">✔</span>
                 )}
                 {t.audit.mintable && <span className="text-yellow-400">M</span>}
-                {t.audit.freezable && <span className="text-yellow-400">F</span>}
+                {t.audit.freezable && (
+                  <span className="text-yellow-400">F</span>
+                )}
                 {t.audit.honeypot && <span className="text-red-500">H</span>}
               </div>
             </div>
@@ -280,7 +290,9 @@ const ScannerTables = () => {
         setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
         setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
         setMinBuys24H={(v) => setFilters({ ...filters, minBuys24H: v ?? null })}
-        setMinSells24H={(v) => setFilters({ ...filters, minSells24H: v ?? null })}
+        setMinSells24H={(v) =>
+          setFilters({ ...filters, minSells24H: v ?? null })
+        }
         setMinTxns24H={(v) => setFilters({ ...filters, minTxns24H: v ?? null })}
         setIsVerified={(v) => setFilters({ ...filters, isVerified: v ?? null })}
         setTimeFrame={(v) => setFilters({ ...filters, timeFrame: v ?? null })}

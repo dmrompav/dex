@@ -714,6 +714,57 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
                 } catch (e) {
                   console.warn("pair-stats add new token failed", e);
                 }
+                // additionally: seed priceHistory from pairStats timeframes when available
+                try {
+                  const pairStats = stats.pairStats;
+                  if (pairStats) {
+                    const pushIfValid = (arr: number[], s?: string | null) => {
+                      if (!s) return;
+                      const v = Number(s);
+                      if (!Number.isFinite(v)) return;
+                      if (arr.length === 0 || arr[arr.length - 1] !== v)
+                        arr.push(v);
+                    };
+
+                    const tfOrder = [
+                      pairStats.fiveMin,
+                      pairStats.oneHour,
+                      pairStats.sixHour,
+                      pairStats.twentyFourHour,
+                    ];
+
+                    // update trending and new lists if present
+                    const applySeed = (arr: TokenData[]) => {
+                      const i = arr.findIndex((x) => x.pairAddress === pid);
+                      if (i < 0) return arr;
+                      const copy = [...arr];
+                      const ex = copy[i];
+                      const history = Array.isArray(ex.priceHistory)
+                        ? [...ex.priceHistory]
+                        : [ex.priceUsd].filter(Boolean);
+                      for (const tf of tfOrder) {
+                        try {
+                          pushIfValid(history, tf.first);
+                          pushIfValid(history, tf.last);
+                        } catch {
+                          // ignore
+                        }
+                      }
+                      // cap
+                      if (history.length > 30)
+                        history.splice(0, history.length - 30);
+                      copy[i] = { ...ex, priceHistory: history };
+                      return copy;
+                    };
+
+                    set((s) => ({
+                      trendingTokens: applySeed(s.trendingTokens),
+                      newTokens: applySeed(s.newTokens),
+                    }));
+                  }
+                } catch (e) {
+                  console.warn("seed priceHistory from pair-stats failed", e);
+                }
               } catch (e) {
                 console.warn("ws pair-stats handler", e);
               }

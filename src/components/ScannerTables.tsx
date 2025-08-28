@@ -84,14 +84,20 @@ const ScannerTables = () => {
         });
 
         const lineD = coords
-          .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+          .map(
+            (p, i) =>
+              `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`
+          )
           .join(" ");
 
         // area path: move to first, line through points, line to bottom-right, bottom-left, close
         const areaD =
           coords.length > 0
             ? `${coords
-                .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+                .map(
+                  (p, i) =>
+                    `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`
+                )
                 .join(" ")} L ${w} ${h} L 0 ${h} Z`
             : "";
 
@@ -99,19 +105,48 @@ const ScannerTables = () => {
         const last = values[values.length - 1] ?? first;
         const trend = last - first;
         const stroke = trend >= 0 ? "#10b981" : "#ef4444"; // green / red
-        const fill = trend >= 0 ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)";
+        const fill =
+          trend >= 0 ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)";
 
         const pct = first > 0 ? ((last - first) / first) * 100 : 0;
-        const title = `last: $${last.toFixed(6)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)`;
+        const title = `last: $${last.toFixed(6)} (${
+          pct >= 0 ? "+" : ""
+        }${pct.toFixed(2)}%)`;
+
+        // If only one point, draw a small dot to indicate value exists
+        if (coords.length === 1) {
+          const p = coords[0];
+          return (
+            <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+              <title>{title}</title>
+              <circle cx={p.x} cy={p.y} r={2} fill={stroke} />
+              <line
+                x1={p.x - 6}
+                y1={p.y}
+                x2={p.x + 6}
+                y2={p.y}
+                stroke={stroke}
+                strokeWidth={1}
+                strokeLinecap="round"
+                opacity={0.6}
+              />
+            </svg>
+          );
+        }
 
         return (
           <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
             <title>{title}</title>
-            {areaD && (
-              <path d={areaD} fill={fill} stroke="none" />
-            )}
+            {areaD && <path d={areaD} fill={fill} stroke="none" />}
             {lineD && (
-              <path d={lineD} fill="none" stroke={stroke} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d={lineD}
+                fill="none"
+                stroke={stroke}
+                strokeWidth={1.6}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             )}
           </svg>
         );

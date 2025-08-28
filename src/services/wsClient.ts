@@ -16,7 +16,8 @@ export class WsClient {
   private maxDelay = 30000;
   private subscribedPairs = new Set<string>();
   private subscribedPairStats = new Set<string>();
-  private lastFilter: GetScannerResultParams | null = null;
+  // support multiple scanner-filter subscriptions (serialized JSON)
+  private subscribedFilters = new Set<string>();
 
   constructor(url: string) {
     this.url = url;
@@ -34,8 +35,15 @@ export class WsClient {
       this.reconnectDelay = 1000;
       this.openHandlers.forEach((h) => h());
       // re-subscribe last filter if present
-      if (this.lastFilter)
-        this.send({ event: "scanner-filter", data: this.lastFilter });
+      // re-subscribe all active scanner filters
+      for (const sf of this.subscribedFilters) {
+        try {
+          const parsed = JSON.parse(sf) as GetScannerResultParams;
+          this.send({ event: "scanner-filter", data: parsed });
+        } catch {
+          // ignore invalid
+        }
+      }
       // resubscribe pairs and pair-stats
       for (const key of this.subscribedPairs) {
         const [pair, token, chain] = key.split("|");
@@ -139,16 +147,22 @@ export class WsClient {
   }
 
   subscribeFilter(filter: GetScannerResultParams) {
-    this.lastFilter = filter;
-    this.send({ event: "scanner-filter", data: filter });
+    try {
+      const key = JSON.stringify(filter);
+      if (!this.subscribedFilters.has(key)) this.subscribedFilters.add(key);
+      this.send({ event: "scanner-filter", data: filter });
+    } catch {
+      console.warn("subscribeFilter: could not serialize filter");
+      this.send({ event: "scanner-filter", data: filter });
+    }
   }
 
   unsubscribeFilter(filter: GetScannerResultParams) {
-    if (
-      this.lastFilter &&
-      JSON.stringify(this.lastFilter) === JSON.stringify(filter)
-    ) {
-      this.lastFilter = null;
+    try {
+      const key = JSON.stringify(filter);
+      this.subscribedFilters.delete(key);
+    } catch {
+      // ignore
     }
     this.send({ event: "unsubscribe-scanner-filter", data: filter });
   }

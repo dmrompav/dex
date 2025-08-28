@@ -65,6 +65,60 @@ const ScannerTables = () => {
 
   const columns: ColumnDef<TokenData, unknown>[] = [
     {
+      id: "sparkline",
+      header: "",
+      cell: ({ row }) => {
+        const history = row.original.priceHistory ?? [row.original.priceUsd];
+        const values = history.length > 0 ? history : [row.original.priceUsd];
+        const w = 96;
+        const h = 28;
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+
+        // Build path commands for line and area
+        const coords = values.map((v, i) => {
+          const x = values.length === 1 ? w / 2 : (i / (values.length - 1)) * w;
+          const y = h - ((v - min) / range) * h;
+          return { x, y, v };
+        });
+
+        const lineD = coords
+          .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+          .join(" ");
+
+        // area path: move to first, line through points, line to bottom-right, bottom-left, close
+        const areaD =
+          coords.length > 0
+            ? `${coords
+                .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+                .join(" ")} L ${w} ${h} L 0 ${h} Z`
+            : "";
+
+        const first = values[0] ?? 0;
+        const last = values[values.length - 1] ?? first;
+        const trend = last - first;
+        const stroke = trend >= 0 ? "#10b981" : "#ef4444"; // green / red
+        const fill = trend >= 0 ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)";
+
+        const pct = first > 0 ? ((last - first) / first) * 100 : 0;
+        const title = `last: $${last.toFixed(6)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)`;
+
+        return (
+          <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+            <title>{title}</title>
+            {areaD && (
+              <path d={areaD} fill={fill} stroke="none" />
+            )}
+            {lineD && (
+              <path d={lineD} fill="none" stroke={stroke} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+            )}
+          </svg>
+        );
+      },
+      meta: { className: "p-2 text-right" },
+    },
+    {
       accessorKey: "tokenName",
       header: "Token",
       cell: ({ row }) => {

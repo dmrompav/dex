@@ -69,6 +69,8 @@ export function mapScannerResultToTokenData(result: ScannerResult): TokenData {
     totalSupply: parseHumanNumber(result.token1TotalSupplyFormatted),
     token1Decimals: Number(result.token1Decimals) || 0,
     token0Decimals: Number(result.token0Decimals) || 0,
+    // initialize price history with the starting price
+    priceHistory: [parseFloat(result.price) || 0],
     priceChangePcs: {
       "5m": parseFloat(result.diff5M),
       "1h": parseFloat(result.diff1H),

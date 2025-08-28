@@ -284,10 +284,15 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
                     const newList: TokenData[] = mapped.map((m) => {
                       const existing = prevById.get(m.id);
                       if (existing && existing.priceUsd > 0) {
+                        // preserve price and mcap and price history
+                        const history = Array.isArray(existing.priceHistory)
+                          ? [...existing.priceHistory]
+                          : [existing.priceUsd].filter(Boolean);
                         return {
                           ...m,
                           priceUsd: existing.priceUsd,
                           mcap: existing.mcap ?? m.mcap,
+                          priceHistory: history,
                         };
                       }
                       return m;
@@ -312,6 +317,9 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
                       ) {
                         m.priceUsd = existing.priceUsd;
                         m.mcap = existing.mcap ?? m.mcap;
+                        // carry forward price history if present
+                        if (Array.isArray(existing.priceHistory))
+                          m.priceHistory = [...existing.priceHistory];
                       }
                       byId.set(m.id, m);
                     }
@@ -319,13 +327,32 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
                   }
 
                   if (isNewPayload) {
+                    // replace newTokens with mapped (scanner-pairs is full dataset for this filter)
                     const prev = current.newTokens || [];
-                    const prevIds = new Set(prev.map((t) => t.id));
-                    const toPrepend = mapped.filter((m) => !prevIds.has(m.id));
-                    if (toPrepend.length > 0) {
-                      const newList = [...toPrepend, ...prev];
-                      set({ newTokens: newList });
-                    }
+                    const prevById = new Map(prev.map((t) => [t.id, t]));
+                    const newList: TokenData[] = mapped.map((m) => {
+                      const existing = prevById.get(m.id);
+                      if (existing) {
+                        // preserve previous price/mcap/history when present
+                        const history = Array.isArray(existing.priceHistory)
+                          ? [...existing.priceHistory]
+                          : [existing.priceUsd].filter(Boolean);
+                        return {
+                          ...m,
+                          priceUsd: existing.priceUsd ?? m.priceUsd,
+                          mcap: existing.mcap ?? m.mcap,
+                          priceHistory: history,
+                        };
+                      }
+                      return m;
+                    });
+                    // unsubscribe removed tokens
+                    const removed = prev.filter(
+                      (t) => !newList.some((n) => n.id === t.id)
+                    );
+                    if (removed.length > 0) get().unsubscribeTokens(removed);
+                    // set and ensure subscriptions
+                    get().setNewTokens(newList);
                   } else {
                     // merge into newTokens as before
                     const filters = current.filters;
@@ -373,8 +400,18 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
                     console.debug("scanner-pairs debug2 error", e);
                   }
                   if (toPrepend.length > 0) {
+                    // preserve history
+                    const existingById = new Map(
+                      existingNew.map((t) => [t.id, t])
+                    );
+                    const prepared = toPrepend.map((m) => {
+                      const ex = existingById.get(m.id);
+                      if (ex && Array.isArray(ex.priceHistory))
+                        m.priceHistory = [...ex.priceHistory];
+                      return m;
+                    });
                     // new tokens should appear first
-                    const newList = [...toPrepend, ...existingNew];
+                    const newList = [...prepared, ...existingNew];
                     // use setter helper to also manage pair subscriptions
                     get().setNewTokens(newList);
                   }
@@ -475,6 +512,15 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
                             txs.buys = (txs.buys || 0) + p.buysDelta;
                           if (p.sellsDelta)
                             txs.sells = (txs.sells || 0) + p.sellsDelta;
+                          // append price to history (cap at 30)
+                          const history = Array.isArray(ex.priceHistory)
+                            ? [...ex.priceHistory]
+                            : [ex.priceUsd].filter(Boolean);
+                          if (p.priceUsd && !Number.isNaN(p.priceUsd)) {
+                            history.push(p.priceUsd);
+                            if (history.length > 30)
+                              history.splice(0, history.length - 30);
+                          }
                           copy[i] = {
                             ...ex,
                             priceUsd: p.priceUsd ?? ex.priceUsd,
@@ -482,6 +528,7 @@ export const useScannerTablesStore = create<ScannerTablesState>((set, get) => ({
                             volumeUsd:
                               (ex.volumeUsd || 0) + (p.volumeDelta || 0),
                             transactions: txs,
+                            priceHistory: history,
                           };
                           return copy;
                         };

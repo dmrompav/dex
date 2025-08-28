@@ -73,6 +73,8 @@ export interface TokenData {
   priceUsd: number;
   volumeUsd: number;
   mcap: number;
+  // recent price history for sparklines (most-recent last)
+  priceHistory?: number[];
   tokenImageUri?: string | null;
   // internal fields used for realtime recalculation
   token1TotalSupplyRaw?: string;

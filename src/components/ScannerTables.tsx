@@ -400,41 +400,165 @@ const ScannerTables = () => {
     }
   };
 
+  // Helper to download a blob as a file
+  function downloadBlob(filename: string, blob: Blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Export TokenData[] to CSV (simple, safe quoting)
+  function exportTokensToCsv(filename: string, tokens: TokenData[]) {
+    const headers = [
+      "tokenName",
+      "tokenSymbol",
+      "tokenAddress",
+      "pairAddress",
+      "chain",
+      "exchange",
+      "priceUsd",
+      "volumeUsd",
+      "mcap",
+      "tokenCreatedTimestamp",
+      "liquidityCurrent",
+      "liquidityChangePc",
+      "buys",
+      "sells",
+      "priceHistory",
+    ];
+
+    const rows = tokens.map((t) => {
+      const vals = [
+        t.tokenName ?? "",
+        t.tokenSymbol ?? "",
+        t.tokenAddress ?? "",
+        t.pairAddress ?? "",
+        t.chain ?? "",
+        t.exchange ?? "",
+        typeof t.priceUsd === "number" ? String(t.priceUsd) : "",
+        typeof t.volumeUsd === "number" ? String(t.volumeUsd) : "",
+        typeof t.mcap === "number" ? String(t.mcap) : "",
+        t.tokenCreatedTimestamp
+          ? new Date(t.tokenCreatedTimestamp).toISOString()
+          : "",
+        typeof t.liquidity?.current === "number"
+          ? String(t.liquidity.current)
+          : "",
+        typeof t.liquidity?.changePc === "number"
+          ? String(t.liquidity.changePc)
+          : "",
+        typeof t.transactions?.buys === "number"
+          ? String(t.transactions.buys)
+          : "0",
+        typeof t.transactions?.sells === "number"
+          ? String(t.transactions.sells)
+          : "0",
+        Array.isArray(t.priceHistory) ? t.priceHistory.join("|") : "",
+      ];
+      // escape quotes
+      return vals.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
+    });
+
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    downloadBlob(
+      filename.endsWith(".csv") ? filename : `${filename}.csv`,
+      blob
+    );
+  }
+
+  // Export TokenData[] to JSON
+  function exportTokensToJson(filename: string, tokens: TokenData[]) {
+    const blob = new Blob([JSON.stringify(tokens, null, 2)], {
+      type: "application/json",
+    });
+    downloadBlob(
+      filename.endsWith(".json") ? filename : `${filename}.json`,
+      blob
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Фильтры */}
-      <ScannerTableFilters
-        chain={filters.chain}
-        minVolume={filters.minVolume}
-        maxAge={filters.maxAge}
-        excludeHoneypots={filters.excludeHoneypots}
-        minMcap={filters.minMcap}
-        minLiq={filters.minLiq}
-        maxLiq={filters.maxLiq}
-        minBuys24H={filters.minBuys24H}
-        minSells24H={filters.minSells24H}
-        minTxns24H={filters.minTxns24H}
-        isVerified={filters.isVerified}
-        timeFrame={filters.timeFrame ?? null}
-        setChain={(chain) =>
-          setFilters({ ...filters, chain: chain as typeof filters.chain })
-        }
-        setMinVolume={(minVolume) => setFilters({ ...filters, minVolume })}
-        setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
-        setExcludeHoneypots={(excludeHoneypots) =>
-          setFilters({ ...filters, excludeHoneypots })
-        }
-        setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
-        setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
-        setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
-        setMinBuys24H={(v) => setFilters({ ...filters, minBuys24H: v ?? null })}
-        setMinSells24H={(v) =>
-          setFilters({ ...filters, minSells24H: v ?? null })
-        }
-        setMinTxns24H={(v) => setFilters({ ...filters, minTxns24H: v ?? null })}
-        setIsVerified={(v) => setFilters({ ...filters, isVerified: v ?? null })}
-        setTimeFrame={(v) => setFilters({ ...filters, timeFrame: v ?? null })}
-      />
+      <div className="flex items-center justify-between gap-4">
+        <ScannerTableFilters
+          chain={filters.chain}
+          minVolume={filters.minVolume}
+          maxAge={filters.maxAge}
+          excludeHoneypots={filters.excludeHoneypots}
+          minMcap={filters.minMcap}
+          minLiq={filters.minLiq}
+          maxLiq={filters.maxLiq}
+          minBuys24H={filters.minBuys24H}
+          minSells24H={filters.minSells24H}
+          minTxns24H={filters.minTxns24H}
+          isVerified={filters.isVerified}
+          timeFrame={filters.timeFrame ?? null}
+          setChain={(chain) =>
+            setFilters({ ...filters, chain: chain as typeof filters.chain })
+          }
+          setMinVolume={(minVolume) => setFilters({ ...filters, minVolume })}
+          setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
+          setExcludeHoneypots={(excludeHoneypots) =>
+            setFilters({ ...filters, excludeHoneypots })
+          }
+          setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
+          setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
+          setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
+          setMinBuys24H={(v) =>
+            setFilters({ ...filters, minBuys24H: v ?? null })
+          }
+          setMinSells24H={(v) =>
+            setFilters({ ...filters, minSells24H: v ?? null })
+          }
+          setMinTxns24H={(v) =>
+            setFilters({ ...filters, minTxns24H: v ?? null })
+          }
+          setIsVerified={(v) =>
+            setFilters({ ...filters, isVerified: v ?? null })
+          }
+          setTimeFrame={(v) => setFilters({ ...filters, timeFrame: v ?? null })}
+        />
+
+        <div className="flex items-center gap-2">
+          <button
+            className="px-3 py-1 bg-gray-100 rounded text-sm"
+            onClick={() =>
+              exportTokensToCsv("trending_tokens.csv", trendingTokens)
+            }
+          >
+            Export Trending CSV
+          </button>
+          <button
+            className="px-3 py-1 bg-gray-100 rounded text-sm"
+            onClick={() =>
+              exportTokensToJson("trending_tokens.json", trendingTokens)
+            }
+          >
+            Export Trending JSON
+          </button>
+
+          <button
+            className="px-3 py-1 bg-gray-100 rounded text-sm"
+            onClick={() => exportTokensToCsv("new_tokens.csv", newTokens)}
+          >
+            Export New CSV
+          </button>
+          <button
+            className="px-3 py-1 bg-gray-100 rounded text-sm"
+            onClick={() => exportTokensToJson("new_tokens.json", newTokens)}
+          >
+            Export New JSON
+          </button>
+        </div>
+      </div>
+
       {/* Таблицы */}
       <div className="flex gap-4">
         <div className="w-1/2">

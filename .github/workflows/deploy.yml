@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Give the workflow permission to push to the repo (required for GITHUB_TOKEN to push)
+permissions:
+  contents: write
+
 env:
   GH_PAGES_BASE: "/dex/"
 

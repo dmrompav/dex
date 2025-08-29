@@ -484,7 +484,7 @@ const ScannerTables = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4 w-full grow-1">
       {/* Фильтры */}
       <div className="flex items-center justify-between gap-4">
         <ScannerTableFilters
@@ -525,47 +525,36 @@ const ScannerTables = () => {
           }
           setTimeFrame={(v) => setFilters({ ...filters, timeFrame: v ?? null })}
         />
-
-        <div className="flex items-center gap-2">
-          <button
-            className="px-3 py-1 bg-gray-100 rounded text-sm"
-            onClick={() =>
-              exportTokensToCsv("trending_tokens.csv", trendingTokens)
-            }
-          >
-            Export Trending CSV
-          </button>
-          <button
-            className="px-3 py-1 bg-gray-100 rounded text-sm"
-            onClick={() =>
-              exportTokensToJson("trending_tokens.json", trendingTokens)
-            }
-          >
-            Export Trending JSON
-          </button>
-
-          <button
-            className="px-3 py-1 bg-gray-100 rounded text-sm"
-            onClick={() => exportTokensToCsv("new_tokens.csv", newTokens)}
-          >
-            Export New CSV
-          </button>
-          <button
-            className="px-3 py-1 bg-gray-100 rounded text-sm"
-            onClick={() => exportTokensToJson("new_tokens.json", newTokens)}
-          >
-            Export New JSON
-          </button>
-        </div>
       </div>
 
       {/* Таблицы */}
-      <div className="flex gap-4">
-        <div className="w-1/2">
+      <div className="flex gap-4 w-full grow-1">
+        <div className="w-1/2 min-w-0">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-bold">Trending Tokens</h2>
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() =>
+                  exportTokensToCsv("trending_tokens.csv", trendingTokens)
+                }
+              >
+                CSV
+              </button>
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() =>
+                  exportTokensToJson("trending_tokens.json", trendingTokens)
+                }
+              >
+                JSON
+              </button>
+            </div>
+          </div>
           <ScannerTable
             columns={columns}
             data={trendingTokens}
-            title="Trending Tokens"
+            title=""
             loading={trendingLoading}
             error={error}
             hasMore={trendingTokens.length < trendingTotalRows}
@@ -589,11 +578,28 @@ const ScannerTables = () => {
             sortable={true}
           />
         </div>
-        <div className="w-1/2">
+        <div className="w-1/2 min-w-0 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-bold">New Tokens</h2>
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() => exportTokensToCsv("new_tokens.csv", newTokens)}
+              >
+                CSV
+              </button>
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() => exportTokensToJson("new_tokens.json", newTokens)}
+              >
+                JSON
+              </button>
+            </div>
+          </div>
           <ScannerTable
             columns={columns}
             data={newTokens}
-            title="New Tokens"
+            title=""
             loading={newLoading}
             error={error}
             hasMore={newTokens.length < newTotalRows}

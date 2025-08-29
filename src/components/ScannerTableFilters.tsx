@@ -189,7 +189,7 @@ export const ScannerTableFilters = ({
   }, [maxAge]);
 
   return (
-    <div className="flex flex-wrap gap-4 items-end p-4 bg-gray-800 rounded-lg">
+    <div className="flex flex-wrap gap-4 items-end w-full bg-gray-800 rounded-lg p-3">
       <div className="flex flex-col gap-1">
         <Label htmlFor="chain">Chain</Label>
         <Select value={chain} onValueChange={setChain}>

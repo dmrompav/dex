@@ -111,7 +111,7 @@ export function ScannerTable<T extends { id: string }>({
   }, [onLoadMore, hasMore, loadingMore, parentRef.current]);
 
   return (
-    <div className="w-full">
+    <div className="w-full grow-1 flex flex-col">
       <h2 className="font-bold mb-2">{title}</h2>
       <div
         ref={parentRef}

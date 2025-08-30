@@ -115,10 +115,10 @@ export function ScannerTable<T extends { id: string }>({
       <h2 className="font-bold mb-2">{title}</h2>
       <div
         ref={parentRef}
-        className="relative border rounded bg-white dark:bg-gray-900 min-h-[400px] max-h-[600px] overflow-y-auto"
+        className="relative border rounded bg-white dark:bg-gray-900 max-h-[400px] overflow-y-auto"
       >
         {data.length > 0 && (
-          <Table className="w-full text-sm text-black dark:text-white">
+          <Table className="w-full max-h-full text-sm text-black dark:text-white">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow

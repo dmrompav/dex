@@ -5,6 +5,7 @@ import { ScannerTableFilters } from "./ScannerTableFilters";
 import { ScannerTable } from "./ScannerTable";
 import type { TokenData, SerdeRankBy, OrderBy } from "../api/types";
 import type { ColumnDef } from "@tanstack/react-table";
+import { SlidersHorizontal } from "lucide-react";
 
 // Helper: return css class for pcs value
 const getPcsClass = (val: number) =>
@@ -502,13 +503,19 @@ const ScannerTables = () => {
     exportTokensToCsv: (filename: string, tokens: TokenData[]) => void;
     exportTokensToJson: (filename: string, tokens: TokenData[]) => void;
     columns: ColumnDef<TokenData, unknown>[];
+    value: string;
+    onValueChange: (v: string) => void;
     onTrendingSort: (s: SortArg) => void;
     onNewSort: (s: SortArg) => void;
   }
 
   function MobileTablesView(props: MobileTablesViewProps) {
     return (
-      <Tabs defaultValue="trending" className="w-full">
+      <Tabs
+        value={props.value}
+        onValueChange={props.onValueChange}
+        className="w-full"
+      >
         <TabsList>
           <TabsTrigger value="trending">Trending</TabsTrigger>
           <TabsTrigger value="new">New</TabsTrigger>
@@ -596,6 +603,8 @@ const ScannerTables = () => {
   }
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  // keep mobile tab selection at top-level so it doesn't reset on re-renders
+  const [mobileTab, setMobileTab] = useState<string>("trending");
 
   return (
     <div className="flex flex-col gap-4 w-full grow-1">
@@ -648,11 +657,12 @@ const ScannerTables = () => {
         {/* Mobile / tablet: burger button opens slide-over with filters */}
         <div className="block md:hidden">
           <button
-            className="px-3 py-2 rounded bg-gray-800 text-white"
+            className="!p-1 !px-2 rounded bg-gray-800 text-white flex gap-2 items-center"
             onClick={() => setMobileFiltersOpen(true)}
             aria-label="Open filters"
           >
-            ☰ Filters
+            <SlidersHorizontal className="w-4 h-4" />
+            Filters
           </button>
         </div>
       </div>
@@ -739,6 +749,8 @@ const ScannerTables = () => {
           exportTokensToCsv={exportTokensToCsv}
           exportTokensToJson={exportTokensToJson}
           columns={columns}
+          value={mobileTab}
+          onValueChange={(v) => setMobileTab(v)}
           onTrendingSort={(sort) => {
             if (!sort) {
               setTrendingRankBy("volume");

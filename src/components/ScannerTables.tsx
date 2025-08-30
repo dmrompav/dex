@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./shadcn/tabs";
 import { useScannerTablesStore } from "../stores/scannerTablesStore";
 import { ScannerTableFilters } from "./ScannerTableFilters";
 import { ScannerTable } from "./ScannerTable";
@@ -483,52 +484,286 @@ const ScannerTables = () => {
     );
   }
 
+  // Mobile/tab view component used only on small screens
+  type SortArg = { id: string; desc: boolean } | null;
+
+  interface MobileTablesViewProps {
+    trendingTokens: TokenData[];
+    newTokens: TokenData[];
+    trendingLoading: boolean;
+    newLoading: boolean;
+    error: string | null;
+    trendingTotalRows: number;
+    newTotalRows: number;
+    loadingMoreTrending: boolean;
+    loadingMoreNew: boolean;
+    loadMoreTrendingTokens: () => void;
+    loadMoreNewTokens: () => void;
+    exportTokensToCsv: (filename: string, tokens: TokenData[]) => void;
+    exportTokensToJson: (filename: string, tokens: TokenData[]) => void;
+    columns: ColumnDef<TokenData, unknown>[];
+    onTrendingSort: (s: SortArg) => void;
+    onNewSort: (s: SortArg) => void;
+  }
+
+  function MobileTablesView(props: MobileTablesViewProps) {
+    return (
+      <Tabs defaultValue="trending" className="w-full">
+        <TabsList>
+          <TabsTrigger value="trending">Trending</TabsTrigger>
+          <TabsTrigger value="new">New</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="trending">
+          <div className="flex items-center justify-between mb-2">
+            <div />
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() =>
+                  props.exportTokensToCsv(
+                    "trending_tokens.csv",
+                    props.trendingTokens
+                  )
+                }
+              >
+                CSV
+              </button>
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() =>
+                  props.exportTokensToJson(
+                    "trending_tokens.json",
+                    props.trendingTokens
+                  )
+                }
+              >
+                JSON
+              </button>
+            </div>
+          </div>
+          <ScannerTable
+            columns={props.columns}
+            data={props.trendingTokens}
+            title=""
+            loading={props.trendingLoading}
+            error={props.error}
+            hasMore={props.trendingTokens.length < props.trendingTotalRows}
+            onLoadMore={props.loadMoreTrendingTokens}
+            loadingMore={props.loadingMoreTrending}
+            onServerSort={props.onTrendingSort}
+            sortable={true}
+          />
+        </TabsContent>
+
+        <TabsContent value="new">
+          <div className="flex items-center justify-between mb-2">
+            <div />
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() =>
+                  props.exportTokensToCsv("new_tokens.csv", props.newTokens)
+                }
+              >
+                CSV
+              </button>
+              <button
+                className="px-3 py-1 bg-gray-100 rounded text-sm"
+                onClick={() =>
+                  props.exportTokensToJson("new_tokens.json", props.newTokens)
+                }
+              >
+                JSON
+              </button>
+            </div>
+          </div>
+          <ScannerTable
+            columns={props.columns}
+            data={props.newTokens}
+            title=""
+            loading={props.newLoading}
+            error={props.error}
+            hasMore={props.newTokens.length < props.newTotalRows}
+            onLoadMore={props.loadMoreNewTokens}
+            loadingMore={props.loadingMoreNew}
+            onServerSort={props.onNewSort}
+            sortable={false}
+          />
+        </TabsContent>
+      </Tabs>
+    );
+  }
+
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
   return (
     <div className="flex flex-col gap-4 w-full grow-1">
       {/* Фильтры */}
       <div className="flex items-center justify-between gap-4">
-        <ScannerTableFilters
-          chain={filters.chain}
-          minVolume={filters.minVolume}
-          maxAge={filters.maxAge}
-          excludeHoneypots={filters.excludeHoneypots}
-          minMcap={filters.minMcap}
-          minLiq={filters.minLiq}
-          maxLiq={filters.maxLiq}
-          minBuys24H={filters.minBuys24H}
-          minSells24H={filters.minSells24H}
-          minTxns24H={filters.minTxns24H}
-          isVerified={filters.isVerified}
-          timeFrame={filters.timeFrame ?? null}
-          setChain={(chain) =>
-            setFilters({ ...filters, chain: chain as typeof filters.chain })
-          }
-          setMinVolume={(minVolume) => setFilters({ ...filters, minVolume })}
-          setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
-          setExcludeHoneypots={(excludeHoneypots) =>
-            setFilters({ ...filters, excludeHoneypots })
-          }
-          setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
-          setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
-          setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
-          setMinBuys24H={(v) =>
-            setFilters({ ...filters, minBuys24H: v ?? null })
-          }
-          setMinSells24H={(v) =>
-            setFilters({ ...filters, minSells24H: v ?? null })
-          }
-          setMinTxns24H={(v) =>
-            setFilters({ ...filters, minTxns24H: v ?? null })
-          }
-          setIsVerified={(v) =>
-            setFilters({ ...filters, isVerified: v ?? null })
-          }
-          setTimeFrame={(v) => setFilters({ ...filters, timeFrame: v ?? null })}
+        {/* Desktop / tablet inline filters */}
+        <div className="hidden md:block w-full">
+          <ScannerTableFilters
+            chain={filters.chain}
+            minVolume={filters.minVolume}
+            maxAge={filters.maxAge}
+            excludeHoneypots={filters.excludeHoneypots}
+            minMcap={filters.minMcap}
+            minLiq={filters.minLiq}
+            maxLiq={filters.maxLiq}
+            minBuys24H={filters.minBuys24H}
+            minSells24H={filters.minSells24H}
+            minTxns24H={filters.minTxns24H}
+            isVerified={filters.isVerified}
+            timeFrame={filters.timeFrame ?? null}
+            setChain={(chain) =>
+              setFilters({ ...filters, chain: chain as typeof filters.chain })
+            }
+            setMinVolume={(minVolume) => setFilters({ ...filters, minVolume })}
+            setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
+            setExcludeHoneypots={(excludeHoneypots) =>
+              setFilters({ ...filters, excludeHoneypots })
+            }
+            setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
+            setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
+            setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
+            setMinBuys24H={(v) =>
+              setFilters({ ...filters, minBuys24H: v ?? null })
+            }
+            setMinSells24H={(v) =>
+              setFilters({ ...filters, minSells24H: v ?? null })
+            }
+            setMinTxns24H={(v) =>
+              setFilters({ ...filters, minTxns24H: v ?? null })
+            }
+            setIsVerified={(v) =>
+              setFilters({ ...filters, isVerified: v ?? null })
+            }
+            setTimeFrame={(v) =>
+              setFilters({ ...filters, timeFrame: v ?? null })
+            }
+          />
+        </div>
+
+        {/* Mobile / tablet: burger button opens slide-over with filters */}
+        <div className="block md:hidden">
+          <button
+            className="px-3 py-2 rounded bg-gray-800 text-white"
+            onClick={() => setMobileFiltersOpen(true)}
+            aria-label="Open filters"
+          >
+            ☰ Filters
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile slide-over for filters */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/40 z-40"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          <div className="ml-auto w-full sm:w-3/4 max-w-md bg-gray-900 p-4 h-full overflow-auto z-50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-lg">Filters</h3>
+              <button
+                className="px-2 py-1 rounded bg-gray-700 text-white"
+                onClick={() => setMobileFiltersOpen(false)}
+                aria-label="Close filters"
+              >
+                Close
+              </button>
+            </div>
+            <ScannerTableFilters
+              chain={filters.chain}
+              minVolume={filters.minVolume}
+              maxAge={filters.maxAge}
+              excludeHoneypots={filters.excludeHoneypots}
+              minMcap={filters.minMcap}
+              minLiq={filters.minLiq}
+              maxLiq={filters.maxLiq}
+              minBuys24H={filters.minBuys24H}
+              minSells24H={filters.minSells24H}
+              minTxns24H={filters.minTxns24H}
+              isVerified={filters.isVerified}
+              timeFrame={filters.timeFrame ?? null}
+              setChain={(chain) =>
+                setFilters({ ...filters, chain: chain as typeof filters.chain })
+              }
+              setMinVolume={(minVolume) =>
+                setFilters({ ...filters, minVolume })
+              }
+              setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
+              setExcludeHoneypots={(excludeHoneypots) =>
+                setFilters({ ...filters, excludeHoneypots })
+              }
+              setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
+              setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
+              setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
+              setMinBuys24H={(v) =>
+                setFilters({ ...filters, minBuys24H: v ?? null })
+              }
+              setMinSells24H={(v) =>
+                setFilters({ ...filters, minSells24H: v ?? null })
+              }
+              setMinTxns24H={(v) =>
+                setFilters({ ...filters, minTxns24H: v ?? null })
+              }
+              setIsVerified={(v) =>
+                setFilters({ ...filters, isVerified: v ?? null })
+              }
+              setTimeFrame={(v) =>
+                setFilters({ ...filters, timeFrame: v ?? null })
+              }
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Таблицы */}
+      {/* Mobile / Tablet: show as tabs (single table view) */}
+      <div className="block md:hidden">
+        <MobileTablesView
+          trendingTokens={trendingTokens}
+          newTokens={newTokens}
+          trendingLoading={trendingLoading}
+          newLoading={newLoading}
+          error={error}
+          trendingTotalRows={trendingTotalRows}
+          newTotalRows={newTotalRows}
+          loadingMoreTrending={loadingMoreTrending}
+          loadingMoreNew={loadingMoreNew}
+          loadMoreTrendingTokens={loadMoreTrendingTokens}
+          loadMoreNewTokens={loadMoreNewTokens}
+          exportTokensToCsv={exportTokensToCsv}
+          exportTokensToJson={exportTokensToJson}
+          columns={columns}
+          onTrendingSort={(sort) => {
+            if (!sort) {
+              setTrendingRankBy("volume");
+              setTrendingOrderBy("desc");
+              loadTrendingTokens({ rankBy: "volume", orderBy: "desc" });
+              return;
+            }
+            const rankBy = (columnIdToRankBy(sort.id) ??
+              "volume") as SerdeRankBy;
+            const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
+            setTrendingRankBy(rankBy);
+            setTrendingOrderBy(orderBy);
+            loadTrendingTokens({ rankBy, orderBy });
+          }}
+          onNewSort={(sort) => {
+            if (!sort) return;
+            const rankBy = (columnIdToRankBy(sort.id) ?? "age") as SerdeRankBy;
+            const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
+            loadNewTokens({ rankBy, orderBy });
+          }}
         />
       </div>
 
-      {/* Таблицы */}
-      <div className="flex gap-4 w-full grow-1">
+      {/* Desktop / Large: two tables side-by-side */}
+      <div className="hidden md:flex gap-4 w-full grow-1">
         <div className="w-1/2 min-w-0">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-bold">Trending Tokens</h2>

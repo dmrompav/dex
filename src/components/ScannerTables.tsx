@@ -605,66 +605,95 @@ const ScannerTables = () => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   // keep mobile tab selection at top-level so it doesn't reset on re-renders
   const [mobileTab, setMobileTab] = useState<string>("trending");
+  // track viewport size to avoid mounting both mobile and desktop trees
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 767px)").matches
+      : false
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = (ev: Event) =>
+      setIsMobile((ev as MediaQueryListEvent).matches);
+    if (typeof mq.addEventListener === "function")
+      mq.addEventListener("change", onChange as EventListener);
+    else
+      mq.addListener(onChange as unknown as (e: MediaQueryListEvent) => void);
+    setIsMobile(mq.matches);
+    return () => {
+      if (typeof mq.removeEventListener === "function")
+        mq.removeEventListener("change", onChange as EventListener);
+      else
+        mq.removeListener(
+          onChange as unknown as (e: MediaQueryListEvent) => void
+        );
+    };
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 w-full grow-1">
       {/* Фильтры */}
       <div className="flex items-center justify-between gap-4">
-        {/* Desktop / tablet inline filters */}
-        <div className="hidden md:block w-full">
-          <ScannerTableFilters
-            chain={filters.chain}
-            minVolume={filters.minVolume}
-            maxAge={filters.maxAge}
-            excludeHoneypots={filters.excludeHoneypots}
-            minMcap={filters.minMcap}
-            minLiq={filters.minLiq}
-            maxLiq={filters.maxLiq}
-            minBuys24H={filters.minBuys24H}
-            minSells24H={filters.minSells24H}
-            minTxns24H={filters.minTxns24H}
-            isVerified={filters.isVerified}
-            timeFrame={filters.timeFrame ?? null}
-            setChain={(chain) =>
-              setFilters({ ...filters, chain: chain as typeof filters.chain })
-            }
-            setMinVolume={(minVolume) => setFilters({ ...filters, minVolume })}
-            setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
-            setExcludeHoneypots={(excludeHoneypots) =>
-              setFilters({ ...filters, excludeHoneypots })
-            }
-            setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
-            setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
-            setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
-            setMinBuys24H={(v) =>
-              setFilters({ ...filters, minBuys24H: v ?? null })
-            }
-            setMinSells24H={(v) =>
-              setFilters({ ...filters, minSells24H: v ?? null })
-            }
-            setMinTxns24H={(v) =>
-              setFilters({ ...filters, minTxns24H: v ?? null })
-            }
-            setIsVerified={(v) =>
-              setFilters({ ...filters, isVerified: v ?? null })
-            }
-            setTimeFrame={(v) =>
-              setFilters({ ...filters, timeFrame: v ?? null })
-            }
-          />
-        </div>
-
-        {/* Mobile / tablet: burger button opens slide-over with filters */}
-        <div className="block md:hidden">
-          <button
-            className="!p-1 !px-2 rounded bg-gray-800 text-white flex gap-2 items-center"
-            onClick={() => setMobileFiltersOpen(true)}
-            aria-label="Open filters"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            Filters
-          </button>
-        </div>
+        {/* Desktop inline filters or mobile burger based on viewport */}
+        {!isMobile ? (
+          <div className="w-full">
+            <ScannerTableFilters
+              chain={filters.chain}
+              minVolume={filters.minVolume}
+              maxAge={filters.maxAge}
+              excludeHoneypots={filters.excludeHoneypots}
+              minMcap={filters.minMcap}
+              minLiq={filters.minLiq}
+              maxLiq={filters.maxLiq}
+              minBuys24H={filters.minBuys24H}
+              minSells24H={filters.minSells24H}
+              minTxns24H={filters.minTxns24H}
+              isVerified={filters.isVerified}
+              timeFrame={filters.timeFrame ?? null}
+              setChain={(chain) =>
+                setFilters({ ...filters, chain: chain as typeof filters.chain })
+              }
+              setMinVolume={(minVolume) =>
+                setFilters({ ...filters, minVolume })
+              }
+              setMaxAge={(maxAge) => setFilters({ ...filters, maxAge })}
+              setExcludeHoneypots={(excludeHoneypots) =>
+                setFilters({ ...filters, excludeHoneypots })
+              }
+              setMinMcap={(mcap) => setFilters({ ...filters, minMcap: mcap })}
+              setMinLiq={(v) => setFilters({ ...filters, minLiq: v ?? null })}
+              setMaxLiq={(v) => setFilters({ ...filters, maxLiq: v ?? null })}
+              setMinBuys24H={(v) =>
+                setFilters({ ...filters, minBuys24H: v ?? null })
+              }
+              setMinSells24H={(v) =>
+                setFilters({ ...filters, minSells24H: v ?? null })
+              }
+              setMinTxns24H={(v) =>
+                setFilters({ ...filters, minTxns24H: v ?? null })
+              }
+              setIsVerified={(v) =>
+                setFilters({ ...filters, isVerified: v ?? null })
+              }
+              setTimeFrame={(v) =>
+                setFilters({ ...filters, timeFrame: v ?? null })
+              }
+            />
+          </div>
+        ) : (
+          <div>
+            <button
+              className="!p-1 !px-2 rounded bg-gray-800 text-white flex gap-2 items-center"
+              onClick={() => setMobileFiltersOpen(true)}
+              aria-label="Open filters"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile slide-over for filters */}
@@ -733,7 +762,7 @@ const ScannerTables = () => {
 
       {/* Таблицы */}
       {/* Mobile / Tablet: show as tabs (single table view) */}
-      <div className="block md:hidden">
+      {isMobile && (
         <MobileTablesView
           trendingTokens={trendingTokens}
           newTokens={newTokens}
@@ -772,97 +801,101 @@ const ScannerTables = () => {
             loadNewTokens({ rankBy, orderBy });
           }}
         />
-      </div>
+      )}
 
       {/* Desktop / Large: two tables side-by-side */}
-      <div className="hidden md:flex gap-4 w-full grow-1">
-        <div className="w-1/2 min-w-0">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold">Trending Tokens</h2>
-            <div className="flex items-center gap-2">
-              <button
-                className="px-3 py-1 bg-gray-100 rounded text-sm"
-                onClick={() =>
-                  exportTokensToCsv("trending_tokens.csv", trendingTokens)
-                }
-              >
-                CSV
-              </button>
-              <button
-                className="px-3 py-1 bg-gray-100 rounded text-sm"
-                onClick={() =>
-                  exportTokensToJson("trending_tokens.json", trendingTokens)
-                }
-              >
-                JSON
-              </button>
+      {!isMobile && (
+        <div className="flex gap-4 w-full grow-1">
+          <div className="w-1/2 min-w-0">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-bold">Trending Tokens</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-1 bg-gray-100 rounded text-sm"
+                  onClick={() =>
+                    exportTokensToCsv("trending_tokens.csv", trendingTokens)
+                  }
+                >
+                  CSV
+                </button>
+                <button
+                  className="px-3 py-1 bg-gray-100 rounded text-sm"
+                  onClick={() =>
+                    exportTokensToJson("trending_tokens.json", trendingTokens)
+                  }
+                >
+                  JSON
+                </button>
+              </div>
             </div>
+            <ScannerTable
+              columns={columns}
+              data={trendingTokens}
+              title=""
+              loading={trendingLoading}
+              error={error}
+              hasMore={trendingTokens.length < trendingTotalRows}
+              onLoadMore={() => loadMoreTrendingTokens()}
+              loadingMore={loadingMoreTrending}
+              onServerSort={(sort) => {
+                // if sort cleared, reset to defaults
+                if (!sort) {
+                  setTrendingRankBy("volume");
+                  setTrendingOrderBy("desc");
+                  loadTrendingTokens({ rankBy: "volume", orderBy: "desc" });
+                  return;
+                }
+                const rankBy = (columnIdToRankBy(sort.id) ??
+                  "volume") as SerdeRankBy;
+                const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
+                setTrendingRankBy(rankBy);
+                setTrendingOrderBy(orderBy);
+                loadTrendingTokens({ rankBy, orderBy });
+              }}
+              sortable={true}
+            />
           </div>
-          <ScannerTable
-            columns={columns}
-            data={trendingTokens}
-            title=""
-            loading={trendingLoading}
-            error={error}
-            hasMore={trendingTokens.length < trendingTotalRows}
-            onLoadMore={() => loadMoreTrendingTokens()}
-            loadingMore={loadingMoreTrending}
-            onServerSort={(sort) => {
-              // if sort cleared, reset to defaults
-              if (!sort) {
-                setTrendingRankBy("volume");
-                setTrendingOrderBy("desc");
-                loadTrendingTokens({ rankBy: "volume", orderBy: "desc" });
-                return;
-              }
-              const rankBy = (columnIdToRankBy(sort.id) ??
-                "volume") as SerdeRankBy;
-              const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
-              setTrendingRankBy(rankBy);
-              setTrendingOrderBy(orderBy);
-              loadTrendingTokens({ rankBy, orderBy });
-            }}
-            sortable={true}
-          />
-        </div>
-        <div className="w-1/2 min-w-0 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold">New Tokens</h2>
-            <div className="flex items-center gap-2">
-              <button
-                className="px-3 py-1 bg-gray-100 rounded text-sm"
-                onClick={() => exportTokensToCsv("new_tokens.csv", newTokens)}
-              >
-                CSV
-              </button>
-              <button
-                className="px-3 py-1 bg-gray-100 rounded text-sm"
-                onClick={() => exportTokensToJson("new_tokens.json", newTokens)}
-              >
-                JSON
-              </button>
+          <div className="w-1/2 min-w-0 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-bold">New Tokens</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-1 bg-gray-100 rounded text-sm"
+                  onClick={() => exportTokensToCsv("new_tokens.csv", newTokens)}
+                >
+                  CSV
+                </button>
+                <button
+                  className="px-3 py-1 bg-gray-100 rounded text-sm"
+                  onClick={() =>
+                    exportTokensToJson("new_tokens.json", newTokens)
+                  }
+                >
+                  JSON
+                </button>
+              </div>
             </div>
+            <ScannerTable
+              columns={columns}
+              data={newTokens}
+              title=""
+              loading={newLoading}
+              error={error}
+              hasMore={newTokens.length < newTotalRows}
+              onLoadMore={() => loadMoreNewTokens()}
+              loadingMore={loadingMoreNew}
+              onServerSort={(sort) => {
+                if (!sort) return;
+                const rankBy = (columnIdToRankBy(sort.id) ??
+                  "age") as SerdeRankBy;
+                const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
+                loadNewTokens({ rankBy, orderBy });
+              }}
+              sortable={false}
+            />
           </div>
-          <ScannerTable
-            columns={columns}
-            data={newTokens}
-            title=""
-            loading={newLoading}
-            error={error}
-            hasMore={newTokens.length < newTotalRows}
-            onLoadMore={() => loadMoreNewTokens()}
-            loadingMore={loadingMoreNew}
-            onServerSort={(sort) => {
-              if (!sort) return;
-              const rankBy = (columnIdToRankBy(sort.id) ??
-                "age") as SerdeRankBy;
-              const orderBy = (sort.desc ? "desc" : "asc") as OrderBy;
-              loadNewTokens({ rankBy, orderBy });
-            }}
-            sortable={false}
-          />
         </div>
-      </div>
+      )}
     </div>
   );
 };
